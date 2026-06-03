@@ -1,0 +1,3148 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JewelTrack — Trading · Module 1</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500&family=IBM+Plex+Mono:wght@400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@3.10.0/dist/tabler-icons.min.css">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.8.2/jspdf.plugin.autotable.min.js"></script>
+<style>
+/* ── Accounting / Ledger Style ── */
+:root{
+  --bg:#FFFFFF;--bg2:#F6F7F9;--bg3:#EDEFF2;
+  --tx:#1C2530;--tx2:#5A6675;--tx3:#9AA4B2;
+  --bd:rgba(28,37,48,0.09);--bd2:rgba(28,37,48,0.16);
+  --accent:#1B4D8C;--accent2:#2563A8;
+  --r:5px;--rl:7px;
+  --font:'IBM Plex Sans',system-ui,sans-serif;--mono:'IBM Plex Mono',monospace;
+  --shadow:0 1px 2px rgba(28,37,48,.06),0 1px 3px rgba(28,37,48,.05);
+  --shadow-lg:0 4px 16px rgba(28,37,48,.12),0 1px 4px rgba(28,37,48,.06);
+  --red:#C0392B;--red-bg:#FBEAE8;--red-tx:#A02D20;
+  --yel:#B8860B;--yel-bg:#FBF3E0;--yel-tx:#8A6508;
+  --grn:#1E7E45;--grn-bg:#E6F4EC;--grn-tx:#15622F;
+  --blu-bg:#E8F0F9;--blu-tx:#1B4D8C;
+  --pur-bg:#EEEAF6;--pur-tx:#5B3F8C;
+  --gry-bg:#EEF0F3;--gry-tx:#5A6675;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:var(--font);background:var(--bg3);color:var(--tx);font-size:13.5px;min-height:100vh;-webkit-font-smoothing:antialiased}
+/* LAYOUT */
+.app{display:grid;grid-template-columns:228px 1fr;min-height:100vh}
+/* SIDEBAR */
+.sidebar{background:var(--bg3);border-right:1px solid var(--bd);padding:1.25rem 0;position:sticky;top:0;height:100vh;overflow-y:auto}
+.logo{padding:0 1.25rem 1.1rem;border-bottom:1px solid var(--bd);margin-bottom:.75rem}
+.logo-title{font-size:15px;font-weight:600;display:flex;align-items:center;gap:8px;color:var(--accent);letter-spacing:-.01em}
+.logo-sub{font-size:10px;color:var(--tx3);margin-top:3px;letter-spacing:.05em;text-transform:uppercase}
+.nav-item{display:flex;align-items:center;gap:10px;padding:8px 1.25rem;cursor:pointer;color:var(--tx2);font-size:13px;transition:all .12s;border-left:2px solid transparent;user-select:none}
+.nav-item:hover{background:var(--bg2);color:var(--tx)}
+.nav-item.active{background:var(--blu-bg);color:var(--accent);border-left-color:var(--accent);font-weight:600}
+.nav-item i{font-size:16px}
+.nav-sec{font-size:9.5px;font-weight:600;color:var(--tx3);padding:.9rem 1.25rem .35rem;letter-spacing:.1em;text-transform:uppercase}
+/* MAIN */
+.main{padding:1.5rem;overflow-y:auto;min-width:0}
+.page{display:none}.page.active{display:block}
+.ph{margin-bottom:1.4rem}
+.pt{font-size:19px;font-weight:600;letter-spacing:-.02em}
+.ps{font-size:12.5px;color:var(--tx2);margin-top:4px}
+/* METRICS */
+.metrics{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin-bottom:1.4rem}
+.metric{background:var(--bg);border-radius:var(--r);padding:1rem;border:1px solid var(--bd);box-shadow:var(--shadow)}
+.ml{font-size:9.5px;color:var(--tx3);margin-bottom:8px;text-transform:uppercase;letter-spacing:.08em;font-weight:600}
+.mv{font-size:25px;font-weight:600;letter-spacing:-.02em;font-family:var(--mono)}
+.mv.red{color:var(--red)}.mv.yel{color:var(--yel)}.mv.grn{color:var(--grn)}
+/* CARDS */
+.card{background:var(--bg);border:1px solid var(--bd);border-radius:var(--rl);overflow:hidden;margin-bottom:.875rem;box-shadow:var(--shadow)}
+.ch{padding:.8rem 1.1rem;border-bottom:1px solid var(--bd);display:flex;align-items:center;justify-content:space-between;gap:8px;flex-wrap:wrap;background:var(--bg2)}
+.ct{font-size:12.5px;font-weight:600;letter-spacing:.02em;text-transform:uppercase;color:var(--tx)}
+.cb{padding:1.1rem}
+/* TABLE — ledger style */
+table{width:100%;border-collapse:collapse;font-size:12.5px}
+th{text-align:left;padding:8px 11px;color:var(--tx2);font-weight:600;font-size:10px;text-transform:uppercase;letter-spacing:.05em;border-bottom:2px solid var(--bd2);white-space:nowrap;background:var(--bg2)}
+td{padding:7px 11px;border-bottom:1px solid var(--bd);vertical-align:middle;font-variant-numeric:tabular-nums}
+tr:last-child td{border-bottom:none}
+tr:nth-child(even) td{background:var(--bg2)}
+tr:hover td{background:var(--blu-bg)}
+/* numeric columns right-aligned look via tabular nums; keep left default */
+/* BADGES */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:2px 8px;border-radius:3px;font-size:10.5px;font-weight:600;white-space:nowrap;letter-spacing:.02em;text-transform:uppercase}
+.br{background:var(--red-bg);color:var(--red-tx)}
+.by{background:var(--yel-bg);color:var(--yel-tx)}
+.bg{background:var(--grn-bg);color:var(--grn-tx)}
+.bb{background:var(--blu-bg);color:var(--blu-tx)}
+.bp{background:var(--pur-bg);color:var(--pur-tx)}
+.bgr{background:var(--gry-bg);color:var(--gry-tx)}
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;gap:6px;padding:6px 13px;border:1px solid var(--bd2);border-radius:var(--r);background:var(--bg);cursor:pointer;font-size:12.5px;color:var(--tx);transition:all .12s;font-family:var(--font)}
+.btn:hover{background:var(--bg2)}.btn:active{transform:scale(.98)}
+.btnp{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.btnp:hover{background:var(--accent2);border-color:var(--accent2)}
+.btns{padding:4px 9px;font-size:11.5px}
+.btnd{background:transparent;border-color:transparent;color:var(--tx3)}
+.btnd:hover{background:var(--red-bg);color:var(--red-tx)}
+/* INPUTS */
+input,select,textarea{background:var(--bg);border:1px solid var(--bd2);border-radius:var(--r);padding:6px 10px;font-size:12.5px;color:var(--tx);font-family:var(--font);outline:none;transition:all .12s}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 2px rgba(27,77,140,.15)}
+input::placeholder{color:var(--tx3)}
+td input,td select{padding:4px 7px;font-size:11.5px;border-radius:4px}
+/* FILTERS */
+.frow{display:flex;gap:8px;margin-bottom:.875rem;flex-wrap:wrap}
+.frow input,.frow select{width:auto;flex:1;min-width:130px}
+/* PROGRESS */
+.pb{background:var(--bg3);border-radius:2px;height:5px;overflow:hidden;width:80px;border:1px solid var(--bd)}
+.pf{height:100%;border-radius:2px;transition:width .3s}
+.pf.red{background:var(--red)}.pf.yel{background:var(--yel)}.pf.grn{background:var(--grn)}
+/* ZONE DOTS */
+.zdot{width:8px;height:8px;border-radius:50%;display:inline-block;flex-shrink:0}
+.zdot.red{background:var(--red)}.zdot.yel{background:var(--yel)}.zdot.grn{background:var(--grn)}
+/* DETAIL PANEL */
+.dp{position:fixed;right:0;top:0;height:100vh;width:440px;background:var(--bg);border-left:1px solid var(--bd2);z-index:300;transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1);overflow-y:auto;padding:1.5rem;box-shadow:var(--shadow-lg)}
+.dp.open{transform:translateX(0)}
+.ov{position:fixed;inset:0;background:rgba(28,37,48,.35);z-index:200;display:none;backdrop-filter:blur(2px)}
+.ov.open{display:block}
+.dl{display:grid;grid-template-columns:130px 1fr;gap:7px 12px;font-size:12.5px;margin-bottom:1rem}
+.dl dt{color:var(--tx2)}.dl dd{font-weight:500}
+.divider{border:none;border-top:1px solid var(--bd);margin:1rem 0}
+.srow{padding:8px 0;border-bottom:1px solid var(--bd);font-size:12.5px}
+.srow:last-child{border-bottom:none}
+.sn{font-weight:500;margin-bottom:2px}.sm{color:var(--tx2);font-size:11.5px}
+/* AI */
+.ai-msgs{overflow-y:auto;padding:1rem 0;display:flex;flex-direction:column;gap:12px;min-height:280px;max-height:calc(100vh - 360px)}
+.msg{max-width:85%;padding:10px 14px;border-radius:var(--rl);font-size:12.5px;line-height:1.6;white-space:pre-wrap}
+.mu{background:var(--accent);color:#fff;align-self:flex-end;border-bottom-right-radius:3px;font-weight:500}
+.ma{background:var(--bg2);border:1px solid var(--bd);align-self:flex-start;border-bottom-left-radius:3px}
+.mld{display:flex;gap:4px;align-items:center;padding:14px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:bounce 1.2s infinite}
+.dot:nth-child(2){animation-delay:.2s}.dot:nth-child(3){animation-delay:.4s}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+.air{display:flex;gap:8px;padding:1rem 0 .5rem;border-top:1px solid var(--bd);margin-top:.75rem}
+.air input{flex:1}
+.qbtns{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:12px}
+.qb{padding:5px 12px;border:1px solid var(--bd2);border-radius:16px;background:transparent;cursor:pointer;font-size:11.5px;color:var(--tx2);transition:all .12s;font-family:var(--font)}
+.qb:hover{background:var(--blu-bg);color:var(--accent);border-color:var(--accent)}
+.qb.active{background:var(--accent);color:#fff;border-color:var(--accent)}
+/* MODAL */
+.mbg{position:fixed;inset:0;background:rgba(28,37,48,.4);z-index:400;display:none;align-items:center;justify-content:center;backdrop-filter:blur(3px)}
+.mbg.open{display:flex}
+.modal{background:var(--bg);border:1px solid var(--bd2);border-radius:var(--rl);padding:1.6rem;width:520px;max-width:94vw;max-height:88vh;overflow-y:auto;box-shadow:var(--shadow-lg)}
+.modal h3{font-size:15px;font-weight:600;margin-bottom:1.2rem;letter-spacing:.01em;text-transform:uppercase;color:var(--accent)}
+.fg{margin-bottom:1rem}
+.fl{font-size:11px;color:var(--tx2);margin-bottom:5px;display:block;font-weight:600;text-transform:uppercase;letter-spacing:.04em}
+.fr{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+/* TOAST */
+.toast{position:fixed;bottom:1.5rem;left:50%;transform:translateX(-50%) translateY(80px);background:var(--tx);color:#fff;padding:10px 20px;border-radius:var(--r);font-size:12.5px;font-weight:600;z-index:500;opacity:0;transition:all .3s;pointer-events:none;box-shadow:var(--shadow-lg)}
+.toast.show{transform:translateX(-50%) translateY(0);opacity:1}
+.tag{display:inline-block;padding:2px 8px;border-radius:3px;font-size:10.5px;font-weight:500;background:var(--bg2);color:var(--tx2);border:1px solid var(--bd)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:.875rem}
+.dclose{position:absolute;top:1.25rem;right:1.25rem;cursor:pointer;color:var(--tx3);border:none;background:none;font-size:18px}
+.dclose:hover{color:var(--tx)}
+.tw{overflow-x:auto;-webkit-overflow-scrolling:touch;max-width:100%}
+.tw table{min-width:760px}
+.tw::after{content:"Swipe left/right to see more columns";display:none;font-size:10px;color:var(--tx3);padding:6px 10px;background:var(--bg2);border-top:1px solid var(--bd)}
+/* STONE PURCHASE */
+.sp-view{border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:.875rem;overflow:hidden;box-shadow:var(--shadow)}
+.sp-header{background:var(--bg2);color:var(--accent);padding:.8rem 1.1rem;font-weight:600;font-size:13px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd2);text-transform:uppercase;letter-spacing:.02em}
+/* MOBILE BOTTOM NAV */
+.mob-nav{display:none;position:fixed;bottom:0;left:0;right:0;background:var(--bg3);border-top:1px solid var(--bd2);z-index:100;padding:6px 0 env(safe-area-inset-bottom);box-shadow:0 -2px 12px rgba(28,37,48,.08)}
+.mob-nav-items{display:flex;justify-content:flex-start;overflow-x:auto;-webkit-overflow-scrolling:touch;scroll-snap-type:x proximity}
+.mob-nav-item{display:flex;flex-direction:column;align-items:center;gap:3px;padding:6px 10px;cursor:pointer;color:var(--tx3);font-size:9px;min-width:54px;flex:0 0 auto;border-radius:6px;transition:all .12s;text-transform:uppercase;letter-spacing:.02em;scroll-snap-align:start}
+.mob-nav-item.active{color:var(--accent)}
+.mob-nav-item.danger{color:var(--red)}
+.mob-nav-item i{font-size:19px}
+/* PRINT */
+@media print{.sidebar,.mob-nav,.frow,.btn,.btns,.btnd{display:none!important}.app{grid-template-columns:1fr}.sp-view{break-inside:avoid}}
+/* RESPONSIVE */
+@media(max-width:768px){
+  .app{grid-template-columns:1fr}
+  .sidebar{display:none}
+  .mob-nav{display:block}
+  .main{padding:1rem;padding-bottom:92px;overflow-x:hidden}
+  .two{grid-template-columns:1fr}
+  .metrics{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .metric{padding:.85rem}
+  .mv{font-size:21px}
+  .fr{grid-template-columns:1fr}
+  .dp{width:100vw}
+  .card{overflow:hidden}
+  .ch{padding:.75rem .85rem}
+  .cb{padding:.9rem}
+  .frow{display:grid;grid-template-columns:1fr;gap:8px;padding-left:0!important;padding-right:0!important}
+  .frow input,.frow select,.frow button{width:100%;max-width:none!important}
+  .tw{margin:0 -1px;overflow-x:auto}
+  .tw table{min-width:860px}
+  .tw::after{display:block}
+  th,td{padding:6px 8px;font-size:11.5px}
+  .pt{font-size:17px}
+  .modal{width:94vw;padding:1.15rem}
+}
+
+input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--accent)}
+.metal-card{border:1px solid var(--bd);border-radius:var(--rl);margin-bottom:.875rem;overflow:hidden;box-shadow:var(--shadow)}
+.metal-head{background:var(--bg2);color:var(--accent);padding:.7rem 1.1rem;font-weight:600;font-size:12.5px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--bd2);text-transform:uppercase;letter-spacing:.02em}
+.warn{background:var(--yel-bg);color:var(--yel-tx);padding:.4rem .8rem;border-radius:var(--r);font-size:11.5px;font-weight:600;display:inline-flex;align-items:center;gap:5px}
+
+</style>
+</head>
+<body>
+<div class="app">
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-title"><i class="ti ti-diamond"></i> JewelTrack</div>
+    <div class="logo-sub">Trading · Module 1</div>
+  </div>
+  <div class="nav-sec">Overview</div>
+  <div class="nav-item active" data-page="dashboard"><i class="ti ti-layout-dashboard"></i> Dashboard</div>
+  <div class="nav-item" data-page="prod_overview" data-module="production"><i class="ti ti-chart-bar"></i> Production Overview</div>
+  <div class="nav-sec">Orders</div>
+  <div class="nav-item" data-page="jobs"><i class="ti ti-tool"></i> Job Master</div>
+  <div class="nav-item" data-page="pool"><i class="ti ti-database-import"></i> Order Pool</div>
+  <div class="nav-sec">Stones</div>
+  <div class="nav-item" data-page="stone_order"><i class="ti ti-triangle"></i> Stone Orders</div>
+  <div class="nav-item" data-page="stone_purchase"><i class="ti ti-receipt"></i> Stone Purchase</div>
+  <div class="nav-sec">Workshop</div>
+  <div class="nav-item" data-page="repair"><i class="ti ti-bandage"></i> Repair Jobs</div>
+  <div class="nav-sec" data-module-group="production">Production</div>
+  <div class="nav-item" data-page="prod_master" data-module="production"><i class="ti ti-layout-list"></i> Planning</div>
+  <div class="nav-item" data-page="prod_casting" data-module="production"><i class="ti ti-flame"></i> Casting Master</div>
+  <div class="nav-item" data-page="prod_filling" data-module="production"><i class="ti ti-tool"></i> Filing Master</div>
+  <div class="nav-item" data-page="prod_setting" data-module="production"><i class="ti ti-diamond"></i> Setting Master</div>
+  <div class="nav-item" data-page="prod_polish" data-module="production"><i class="ti ti-sparkles"></i> Polish &amp; Plating</div>
+  <div class="nav-item" data-page="prod_goldloss" data-module="production"><i class="ti ti-coin"></i> Gold Loss</div>
+  <div class="nav-sec">Assistant</div>
+  <div class="nav-item" data-page="ai"><i class="ti ti-help"></i> User Guide</div>
+  <div class="nav-item" data-page="settings"><i class="ti ti-adjustments"></i> Module Settings</div>
+  <div class="nav-sec">Data</div>
+  <div class="nav-item" onclick="backupData()"><i class="ti ti-download"></i> Backup data</div>
+  <div class="nav-item" onclick="g('restore-file').click()"><i class="ti ti-upload"></i> Restore data</div>
+  <input type="file" id="restore-file" accept="application/json,.json" style="display:none" onchange="restoreData(this)">
+  <div class="nav-item" onclick="clearAllData()" style="color:var(--red);margin-top:4px"><i class="ti ti-trash" style="color:var(--red)"></i> Clear all data</div>
+</nav>
+<!-- Mobile bottom nav -->
+<div class="mob-nav">
+  <div class="mob-nav-items">
+    <div class="mob-nav-item active" data-page="dashboard"><i class="ti ti-layout-dashboard"></i>Dash</div>
+    <div class="mob-nav-item" data-page="prod_overview" data-module="production"><i class="ti ti-chart-bar"></i>Overview</div>
+    <div class="mob-nav-item" data-page="jobs"><i class="ti ti-tool"></i>Jobs</div>
+    <div class="mob-nav-item" data-page="pool"><i class="ti ti-database-import"></i>Pool</div>
+    <div class="mob-nav-item" data-page="stone_order"><i class="ti ti-triangle"></i>Stones</div>
+    <div class="mob-nav-item" data-page="stone_purchase"><i class="ti ti-receipt"></i>Buy</div>
+    <div class="mob-nav-item" data-page="repair"><i class="ti ti-bandage"></i>Repair</div>
+    <div class="mob-nav-item" data-page="prod_master" data-module="production"><i class="ti ti-layout-list"></i>Plan</div>
+    <div class="mob-nav-item" data-page="prod_casting" data-module="production"><i class="ti ti-flame"></i>Casting</div>
+    <div class="mob-nav-item" data-page="prod_filling" data-module="production"><i class="ti ti-tool"></i>Filing</div>
+    <div class="mob-nav-item" data-page="prod_setting" data-module="production"><i class="ti ti-diamond"></i>Setting</div>
+    <div class="mob-nav-item" data-page="prod_polish" data-module="production"><i class="ti ti-sparkles"></i>Polish</div>
+    <div class="mob-nav-item" data-page="settings"><i class="ti ti-adjustments"></i>Settings</div>
+    <div class="mob-nav-item" data-page="ai"><i class="ti ti-help"></i>Guide</div>
+    <div class="mob-nav-item" onclick="backupData()"><i class="ti ti-download"></i>Backup</div>
+    <div class="mob-nav-item" onclick="g('restore-file').click()"><i class="ti ti-upload"></i>Restore</div>
+    <div class="mob-nav-item danger" onclick="clearAllData()"><i class="ti ti-trash"></i>Clear</div>
+  </div>
+</div>
+<main class="main">
+
+<!-- DASHBOARD -->
+<div id="page-dashboard" class="page active">
+  <div class="ph"><div class="pt">Dashboard</div><div class="ps" id="dash-updated"></div></div>
+  <div class="metrics" id="dash-metrics"></div>
+  <div class="two">
+    <div class="card"><div class="ch"><span class="ct">Orders by zone</span></div><div class="cb" id="dash-zones"></div></div>
+    <div class="card"><div class="ch"><span class="ct">Stone delivery status</span></div><div class="cb" id="dash-stones"></div></div>
+  </div>
+  <div class="card"><div class="ch"><span class="ct">All orders</span></div><div class="tw">
+    <table><thead><tr><th>Order date</th><th>Order no</th><th>Due date</th><th>Zone</th><th>Factory</th><th>Progress</th><th>Finished</th><th>Balance</th><th>Days</th><th>Finish date</th><th></th></tr></thead>
+    <tbody id="dash-orders"></tbody></table>
+  </div></div>
+</div>
+
+<!-- ORDER MASTER -->
+<div id="page-orders" class="page">
+  <div class="ph"><div style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+    <div><div class="pt">Order Master</div><div class="ps">Manage production orders</div></div>
+    <button class="btn btnp" onclick="openAddOrder()"><i class="ti ti-plus"></i> New order</button>
+  </div></div>
+  <div class="frow">
+    <input type="text" id="order-search" placeholder="Search order no..." oninput="renderOrders()">
+    <select id="order-zone-f" onchange="renderOrders()"><option value="">All zones</option><option value="RED">Red</option><option value="YELLOW">Yellow</option><option value="GREEN">Green</option></select>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Order date</th><th>Order no</th><th>Due date</th><th>Zone</th><th>Qty</th><th>Finished</th><th>Balance</th><th>Progress</th><th></th></tr></thead>
+    <tbody id="orders-body"></tbody>
+  </table></div></div>
+</div>
+
+<!-- JOB MASTER -->
+<div id="page-jobs" class="page">
+  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap"><div><div class="pt">Job Master</div><div class="ps">Individual job items — click edit to update Repair, Received, and Finish date</div></div><button class="btn btns" onclick="manageList('factory')"><i class="ti ti-settings"></i> Manage factories</button></div>
+  <div class="frow">
+    <div style="flex:1;min-width:120px"><label class="fl">Search order</label><input type="text" id="job-search-order" placeholder="Order no..." oninput="renderJobs()" style="width:100%"></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Search article</label><input type="text" id="job-search-article" placeholder="Article..." oninput="renderJobs()" style="width:100%"></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Search supplier</label><input type="text" id="job-search-supplier" placeholder="Supplier..." oninput="renderJobs()" style="width:100%"></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Factory</label><select id="job-factory-f" onchange="renderJobs()" style="width:100%"><option value="">All factories</option></select></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Type</label><select id="job-type-f" onchange="renderJobs()" style="width:100%"><option value="">All types</option></select></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Status</label><select id="job-fin-f" onchange="renderJobs()" style="width:100%"><option value="">All status</option><option value="finished">Finished</option><option value="wip">In progress</option></select></div>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>#</th><th>Order date</th><th>Order no</th><th>Type</th><th>Article</th><th>Stone type</th><th>Size</th><th>Metal</th><th>Factory</th><th>Qty</th><th>Repair</th><th>Received</th><th>Balance</th><th>Stone status</th><th>Finish date</th><th></th></tr></thead>
+    <tbody id="jobs-body"></tbody>
+  </table></div></div>
+</div>
+
+<!-- ORDER POOL -->
+<div id="page-pool" class="page">
+  <div class="ph"><div class="pt">Order Pool</div><div class="ps">Import from Google Sheet — rows are auto-added to Job Master (existing items keep their progress)</div></div>
+  <div class="card"><div class="ch"><span class="ct"><i class="ti ti-file-import"></i> Import from Excel / Google Sheet</span></div>
+    <div class="cb">
+      <p style="font-size:13px;color:var(--tx2);margin-bottom:.75rem">In Google Sheets: select <strong>including the header row</strong> (Order No, Type, Article, …) down through the data → Copy → Paste below. Columns are matched by header name, so any layout works. Item Key is auto-computed if blank.</p>
+      <textarea id="pool-paste" rows="5" placeholder="Paste tab-separated data here..." style="font-family:var(--mono);font-size:12px;margin-bottom:.75rem"></textarea>
+      <div style="display:flex;gap:8px">
+        <button class="btn btnp" onclick="importPoolData()"><i class="ti ti-upload"></i> Import</button>
+        <button class="btn" onclick="document.getElementById('pool-paste').value=''"><i class="ti ti-x"></i> Clear</button>
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="ch"><span class="ct">Current pool data</span><span style="display:flex;align-items:center;gap:10px"><span id="pool-count" style="font-size:12px;color:var(--tx2)"></span><button class="btn btns" onclick="clearPool()"><i class="ti ti-trash"></i> Clear data</button></span></div>
+    <div style="padding:0 1.25rem .75rem"><input type="text" id="pool-search" placeholder="Search..." oninput="renderPool()" style="max-width:280px"></div>
+    <div class="tw"><table>
+      <thead><tr><th>Order no</th><th>Type</th><th>Article</th><th>Metal</th><th>Avg wt</th><th>Total wt</th><th>Wt purity</th><th>Size</th><th>Qty</th><th>Stone type</th><th>Stone wt</th><th>Stone size</th><th>Stone/pc</th><th>Total stones</th></tr></thead>
+      <tbody id="pool-body"></tbody>
+    </table></div>
+  </div>
+</div>
+
+<!-- STONE ORDER -->
+<div id="page-stone_order" class="page">
+  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap"><div><div class="pt">Stone Orders</div><div class="ps">Edit Supplier, Ordered Date, and Received inline</div></div><button class="btn btns" onclick="manageList('supplier')"><i class="ti ti-settings"></i> Manage suppliers</button></div>
+  <div class="frow">
+    <div style="flex:1;min-width:110px"><label class="fl">Search order</label><input type="text" id="so-search-order" placeholder="Order no..." oninput="renderStoneOrders()" style="width:100%"></div>
+    <div style="flex:1;min-width:110px"><label class="fl">Search article</label><input type="text" id="so-search-article" placeholder="Article..." oninput="renderStoneOrders()" style="width:100%"></div>
+    <div style="flex:1;min-width:110px"><label class="fl">Search stone type</label><input type="text" id="so-search-stone" placeholder="Stone type..." oninput="renderStoneOrders()" style="width:100%"></div>
+    <div style="flex:1;min-width:110px"><label class="fl">Search stone size / wt</label><input type="text" id="so-search-size" placeholder="Size or wt..." oninput="renderStoneOrders()" style="width:100%"></div>
+    <div style="flex:1;min-width:110px"><label class="fl">Stone status</label><select id="so-complete-f" onchange="renderStoneOrders()" style="width:100%"><option value="">All status</option><option value="FALSE">Pending</option><option value="TRUE">Complete</option></select></div>
+    <div style="flex:1;min-width:110px"><label class="fl">Supplier</label><select id="so-supplier-f" onchange="renderStoneOrders()" style="width:100%"><option value="">All suppliers</option></select></div>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Order no</th><th>Type</th><th>Stone type</th><th>Stone size</th><th>Total qty</th><th>Supplier</th><th>Ordered date</th><th>Received</th><th>Balance</th><th>Stone status</th><th>Complete date</th><th></th></tr></thead>
+    <tbody id="so-body"></tbody>
+  </table></div></div>
+</div>
+
+<!-- STONE PURCHASE -->
+<div id="page-stone_purchase" class="page">
+  <div class="ph"><div class="pt">Stone Purchase</div><div class="ps">Filter by supplier to view and capture for ordering</div></div>
+  <div class="frow">
+    <select id="sp-supplier-f" onchange="renderStonePurchase()" style="max-width:200px">
+      <option value="">All suppliers</option>
+    </select>
+    <select id="sp-status-f" onchange="renderStonePurchase()"><option value="">All status</option><option value="PENDING RECEIVE">Pending</option><option value="PARTIAL RECEIVE">Partial</option><option value="RECEIVED">Received</option></select>
+    <input type="text" id="sp-search" placeholder="Search stone, order..." oninput="renderStonePurchase()">
+    <button class="btn btnp" onclick="exportStonePurchaseExcel()"><i class="ti ti-file-spreadsheet"></i> Export Excel</button>
+  </div>
+  <div id="sp-content"></div>
+</div>
+
+<!-- REPAIR -->
+<div id="page-repair" class="page">
+  <div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+    <div>
+      <div class="pt">Repair Jobs</div>
+      <div class="ps">Auto-generated from Job Master — to finish a repair, set its Repair qty to 0 in Job Master and the row disappears</div>
+    </div>
+    <button class="btn btnp" onclick="exportRepairsPDF()"><i class="ti ti-file-type-pdf"></i> Export PDF</button>
+  </div>
+  <div class="frow">
+    <div style="flex:1;min-width:120px"><label class="fl">Search ref. job</label><input type="text" id="rep-search-ref" placeholder="Ref. job..." oninput="renderRepairs()" style="width:100%"></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Search order</label><input type="text" id="rep-search-order" placeholder="Order no..." oninput="renderRepairs()" style="width:100%"></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Search article</label><input type="text" id="rep-search-article" placeholder="Article..." oninput="renderRepairs()" style="width:100%"></div>
+    <div style="flex:1;min-width:120px"><label class="fl">Search factory</label><input type="text" id="rep-search-factory" placeholder="Factory..." oninput="renderRepairs()" style="width:100%"></div>
+  </div>
+  <div class="card"><div class="tw"><table>
+    <thead><tr><th>Sent date</th><th>Ref. job</th><th>Order no</th><th>Type</th><th>Article</th><th>Size</th><th>Qty</th><th>Factory</th><th>Repair reason</th></tr></thead>
+    <tbody id="repair-body"></tbody>
+  </table></div></div>
+</div>
+
+
+<!-- ============ CASTING POOL ============ -->
+<!-- ============ PRODUCTION OVERVIEW ============ -->
+<div class="page" id="page-prod_overview">
+<div class="ph"><div class="pt">Production Overview</div><div class="ps">Live view of all jobs from Job Master with production progress</div></div>
+<div class="metrics" id="pm-metrics"></div>
+<div class="card">
+<div class="ch">
+<span class="ct">Production overview — <span id="pm-count">0</span> items</span>
+<button class="btn btns" onclick="PM_loadFromJobMaster()"><i class="ti ti-refresh"></i> Refresh overview</button>
+</div>
+<div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
+<input id="pm-search" oninput="PM_render()" placeholder="Search order / article..." type="text"/>
+<select id="pm-metal-f" onchange="PM_render()"><option value="">All metals</option></select>
+<select id="pm-status-f" onchange="PM_render()"><option value="">All status</option><option value="wip">In progress</option><option value="done">Finished</option></select>
+</div>
+<div class="tw"><table>
+<thead><tr>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th><th>Size</th><th>Qty</th>
+<th>Received</th><th>Balance</th><th>Stone status</th>
+<th>Stone type</th><th>Stone size</th>
+<th>Status</th><th>Finish date</th>
+</tr></thead>
+<tbody id="pm-body"></tbody>
+</table></div>
+</div>
+</div>
+
+<!-- ============ PRODUCTION MASTER ============ -->
+<div class="page" id="page-prod_master">
+<div class="ph"><div class="pt">Planning</div><div class="ps">Select items from Order Pool and send to Casting Master</div></div>
+
+<div class="card">
+<div class="ch"><span class="ct"><i class="ti ti-database-import"></i> Items from Order Pool</span>
+<span style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn btnp btns" onclick="PM_refreshPool()"><i class="ti ti-refresh"></i> Import from Order Pool</button>
+</span>
+</div>
+<div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
+<input id="pm-pool-order" oninput="PM_renderPool()" placeholder="Search order no..." type="text"/>
+<input id="pm-pool-search" oninput="PM_renderPool()" placeholder="Search article..." type="text"/>
+<select id="pm-pool-metal-f" onchange="PM_renderPool()"><option value="">All metals</option></select>
+</div>
+<div class="tw"><table>
+<thead><tr>
+<th style="width:34px"><input type="checkbox" id="pm-pool-all" onchange="togglePMPoolAll(this)"></th>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th><th>Size</th><th>Qty</th>
+<th>Stone type</th><th>Stone size</th><th>Total stones</th>
+<th>Total wt</th><th>Wt purity</th>
+</tr></thead>
+<tbody id="pm-pool-body"></tbody>
+</table></div>
+<div style="padding:.875rem 1.1rem;border-top:1px solid var(--bd);display:flex;gap:8px;align-items:center">
+<button class="btn btnp" onclick="PM_moveToCasting()"><i class="ti ti-flame"></i> Send selected to Production</button>
+<span id="pm-pool-count" style="font-size:12px;color:var(--tx2)"></span>
+</div>
+</div>
+
+</div>
+
+<!-- ============ CASTING MASTER ============ -->
+<div class="page" id="page-prod_casting">
+<div class="ph"><div class="pt">Casting Master</div><div class="ps">Items sent from Planning — set casting date, then mark received to move to Filling Master</div></div>
+<div class="metrics" id="prod-cm-metrics"></div>
+<div class="card">
+<div class="ch"><span class="ct"><i class="ti ti-scale"></i> Metal to prepare (by metal type)</span></div>
+<div class="cb" id="prod-cm-metal-summary"></div>
+</div>
+<div class="card">
+<div class="ch">
+<span class="ct">Casting items — <span id="prod-cm-count">0</span> items</span>
+<button class="btn btnp btns" onclick="P_receiveSelected()"><i class="ti ti-check"></i> Mark received &amp; move to Filling</button>
+</div>
+<div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
+<input id="prod-cm-search-order" oninput="P_renderCastMaster()" placeholder="Search order no..." type="text"/>
+<input id="prod-cm-search" oninput="P_renderCastMaster()" placeholder="Search article..." type="text"/>
+<input id="prod-cm-search-cast" oninput="P_renderCastMaster()" placeholder="Search cast date..." type="text"/>
+</div>
+<div class="tw"><table>
+<thead><tr>
+<th style="width:34px"><input id="prod-cm-all" onchange="P_toggleCmAll(this)" type="checkbox"/></th>
+<th>Cast date</th><th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
+<th>Total wt</th><th>Wt purity</th><th>Alloy</th><th>Size</th><th>Qty</th><th>Received wt (g)</th><th>Received date</th>
+</tr></thead>
+<tbody id="prod-cm-body"></tbody>
+</table></div>
+</div>
+</div>
+<!-- ============ FILLING MASTER ============ -->
+<div class="page" id="page-prod_filling">
+<div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+<div><div class="pt">Filling Master</div><div class="ps">Cast items received — assign to a goldsmith for filing. Total wt is the received (post-cast) weight</div></div>
+<button class="btn btns" onclick="P_manageWorkers()"><i class="ti ti-users"></i> Manage goldsmiths</button>
+</div>
+<div class="card">
+<div class="ch">
+<span class="ct">Filling items — <span id="prod-fm-count">0</span> items</span>
+<span style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn btnp btns" onclick="P_openAssignSelected()"><i class="ti ti-user-plus"></i> Assign to goldsmith</button>
+<button class="btn btns" onclick="P_openReceiveSelected()"><i class="ti ti-package-import"></i> Receive from goldsmith</button>
+<button class="btn btns" onclick="P_moveToSetting()"><i class="ti ti-arrow-right"></i> Move to Setting</button>
+</span>
+</div>
+<div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
+<input id="prod-fm-search" oninput="P_renderFilling()" placeholder="Search order / article..." type="text"/>
+<input id="prod-fm-search-worker" oninput="P_renderFilling()" placeholder="Search goldsmith..." type="text"/>
+<select id="prod-fm-status-f" onchange="P_renderFilling()"><option value="">All status</option><option value="unassigned">Unassigned</option><option value="out">Out with goldsmith</option><option value="returned">Returned</option></select>
+</div>
+<div class="tw"><table>
+<thead><tr>
+<th style="width:34px"><input id="prod-fm-all" onchange="P_toggleFmAll(this)" type="checkbox"/></th>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
+<th>Sent wt (g)</th><th>Qty</th><th>Goldsmith</th><th>Sent date</th>
+<th>Return date</th><th>Return wt (g)</th><th>Allow loss%</th><th>Metal diff (g)</th>
+</tr></thead>
+<tbody id="prod-fm-body"></tbody>
+</table></div>
+</div>
+</div>
+<!-- ============ SETTING MASTER ============ -->
+<div class="page" id="page-prod_setting">
+<div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+<div><div class="pt">Setting Master</div><div class="ps">Stone-setting stage — metal start weight is the Filling return weight. Setter returns metal + set stones (carat ÷ 5 = grams)</div></div>
+<button class="btn btns" onclick="P_manageWorkers()"><i class="ti ti-users"></i> Manage setters</button>
+</div>
+<div class="card">
+<div class="ch">
+<span class="ct">Setting items — <span id="prod-sm-count">0</span> items</span>
+<span style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn btnp btns" onclick="P_openSetAssign()"><i class="ti ti-user-plus"></i> Assign to setter</button>
+<button class="btn btns" onclick="P_openSetReceive()"><i class="ti ti-package-import"></i> Receive from setter</button>
+<button class="btn btns" onclick="P_moveToPolish()"><i class="ti ti-arrow-right"></i> Move to Polish &amp; Plating</button>
+</span>
+</div>
+<div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
+<input id="prod-sm-search" oninput="P_renderSetting()" placeholder="Search order / article..." type="text"/>
+<input id="prod-sm-search-worker" oninput="P_renderSetting()" placeholder="Search setter..." type="text"/>
+<select id="prod-sm-status-f" onchange="P_renderSetting()"><option value="">All status</option><option value="unassigned">Unassigned</option><option value="out">Out with setter</option><option value="returned">Returned</option></select>
+</div>
+<div class="tw"><table>
+<thead><tr>
+<th style="width:34px"><input id="prod-sm-all" onchange="P_toggleSmAll(this)" type="checkbox"/></th>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
+<th>Metal wt (g)</th><th>Qty</th>
+<th>Stone type</th><th>Stone dia</th><th>Stones</th>
+<th>Setter</th><th>Sent date</th>
+<th>Return date</th><th>Return wt (g)</th><th>Stone ct</th><th>Allow loss%</th><th>Metal diff (g)</th>
+</tr></thead>
+<tbody id="prod-sm-body"></tbody>
+</table></div>
+</div>
+</div>
+
+
+
+<!-- ============ POLISH & PLATING ============ -->
+<div class="page" id="page-prod_polish">
+<div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+<div><div class="pt">Polish &amp; Plating</div><div class="ps">Final stage — polish, plate, then finish &amp; update to mark complete</div></div>
+<button class="btn btns" onclick="P_manageWorkers()"><i class="ti ti-users"></i> Manage technicians</button>
+</div>
+<div class="card">
+<div class="ch">
+<span class="ct">Polish &amp; Plating items — <span id="prod-pm-count">0</span> items</span>
+<span style="display:flex;gap:6px;flex-wrap:wrap">
+<button class="btn btnp btns" onclick="P_openPolishAssign()"><i class="ti ti-user-plus"></i> Assign to technician</button>
+<button class="btn btns" onclick="P_openPolishReceive()"><i class="ti ti-package-import"></i> Receive from technician</button>
+<button class="btn btns" style="background:var(--grn-bg);color:var(--grn-tx);border-color:var(--grn-tx)" onclick="P_finishAndUpdate()"><i class="ti ti-check"></i> Finish &amp; Update</button>
+</span>
+</div>
+<div class="frow" style="padding:.875rem 1.1rem 0;margin-bottom:0">
+<input id="prod-pm-search-order" oninput="P_renderPolish()" placeholder="Search order no..." type="text"/>
+<input id="prod-pm-search" oninput="P_renderPolish()" placeholder="Search article..." type="text"/>
+<input id="prod-pm-search-worker" oninput="P_renderPolish()" placeholder="Search technician..." type="text"/>
+<select id="prod-pm-status-f" onchange="P_renderPolish()"><option value="">All status</option><option value="unassigned">Unassigned</option><option value="out">Out with technician</option><option value="returned">Returned</option></select>
+</div>
+<div class="tw"><table>
+<thead><tr>
+<th style="width:34px"><input id="prod-pm-all" onchange="P_togglePmAll(this)" type="checkbox"/></th>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
+<th>Sent wt (g)</th><th>Qty</th><th>Technician</th><th>Sent date</th>
+<th>Return date</th><th>Return wt (g)</th><th>Allow loss%</th><th>Metal diff (g)</th>
+</tr></thead>
+<tbody id="prod-pm-body"></tbody>
+</table></div>
+</div>
+</div>
+
+<!-- ============ GOLD LOSS ============ -->
+<div class="page" id="page-prod_goldloss">
+<div class="ph" style="display:flex;justify-content:space-between;align-items:flex-start;gap:1rem;flex-wrap:wrap">
+<div><div class="pt">Gold Loss Report</div><div class="ps">Performance report for goldsmiths (Filing) and setters (Setting) — metal loss per technician</div></div>
+<button class="btn btnp" onclick="GL_exportPDF()"><i class="ti ti-file-type-pdf"></i> Export PDF</button>
+</div>
+
+<div class="metrics" id="gl-metrics"></div>
+
+<div class="card">
+<div class="ch"><span class="ct">Filters</span></div>
+<div class="frow" style="padding:.875rem 1.1rem">
+<select id="gl-process-f" onchange="GL_render()" style="min-width:140px"><option value="">All processes</option><option value="filling">Filling (Goldsmith)</option><option value="setting">Setting (Setter)</option></select>
+<input id="gl-search-order" oninput="GL_render()" placeholder="Search order no..." type="text"/>
+<input id="gl-search-worker" oninput="GL_render()" placeholder="Search technician..." type="text"/>
+<select id="gl-metal-f" onchange="GL_render()" style="min-width:140px"><option value="">All metals</option></select>
+</div>
+</div>
+
+<div class="card">
+<div class="ch"><span class="ct">Detail — <span id="gl-count">0</span> records</span></div>
+<div class="tw"><table>
+<thead><tr>
+<th>Process</th><th>Technician</th>
+<th>Order no</th><th>Type</th><th>Article</th><th>Metal</th>
+<th>Qty</th><th>Stone type</th><th>Stone qty</th>
+<th>Sent wt (g)</th><th>Return wt (g)</th><th>Metal diff (g)</th>
+</tr></thead>
+<tbody id="gl-body"></tbody>
+</table></div>
+</div>
+</div>
+
+<!-- MODULE SETTINGS -->
+<div id="page-settings" class="page">
+  <div class="ph"><div class="pt">Module Settings</div><div class="ps">เลือกเปิด / ปิดหน้าหลักของระบบ โดยไม่ลบข้อมูลและไม่ลบ logic</div></div>
+  <div class="card"><div class="ch"><span class="ct"><i class="ti ti-adjustments"></i> Active modules</span></div>
+    <div class="cb" style="display:grid;gap:12px;max-width:520px">
+      <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="mod-dashboard" onchange="saveModuleSettings()"> <strong>DASHBOARD</strong> <span style="color:var(--tx2)">ภาพรวม Order Master / Progress</span></label>
+      <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="mod-job" onchange="saveModuleSettings()"> <strong>JOB MASTER</strong> <span style="color:var(--tx2)">รายการงานผลิตหลัก + Repair Job</span></label>
+      <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="mod-stone" onchange="saveModuleSettings()"> <strong>STONE MASTER</strong> <span style="color:var(--tx2)">Stone Orders + Stone Purchase</span></label>
+      <label style="display:flex;align-items:center;gap:10px"><input type="checkbox" id="mod-production" onchange="saveModuleSettings()"> <strong>PRODUCTION MASTER</strong> <span style="color:var(--tx2)">Planning → Casting → Filing → Setting</span></label>
+      <p style="font-size:12.5px;color:var(--tx2);line-height:1.6;margin-top:.5rem">การปิด module จะซ่อนเมนูและหน้าใช้งานเท่านั้น ข้อมูลใน localStorage และ logic เดิมยังอยู่ครบ สามารถเปิดกลับมาได้ตลอด</p>
+    </div>
+  </div>
+</div>
+
+<!-- AI -->
+<div id="page-ai" class="page">
+  <div class="ph"><div class="pt">User Guide</div><div class="ps">What each section does and how to use it — tap a button to jump</div></div>
+
+  <div class="qbtns" style="margin-bottom:1.25rem">
+    <button class="qb active" id="gb-flow" onclick="guideShow('flow')">Overview</button>
+    <button class="qb" id="gb-dashboard" onclick="guideShow('dashboard')">Dashboard</button>
+    <button class="qb" id="gb-pool" onclick="guideShow('pool')">Order Pool</button>
+    <button class="qb" id="gb-jobs" onclick="guideShow('jobs')">Job Master</button>
+    <button class="qb" id="gb-stoneorder" onclick="guideShow('stoneorder')">Stone Orders</button>
+    <button class="qb" id="gb-stonepurchase" onclick="guideShow('stonepurchase')">Stone Purchase</button>
+    <button class="qb" id="gb-repair" onclick="guideShow('repair')">Repair Jobs</button>
+    <button class="qb" id="gb-tips" onclick="guideShow('tips')">Tips</button>
+  </div>
+
+  <div class="card guide-sec" id="g-flow">
+    <div class="ch"><span class="ct"><i class="ti ti-route" style="color:var(--accent)"></i> Overview — how the system flows</span></div>
+    <div class="cb">
+      <p style="font-size:13px;line-height:1.7;color:var(--tx2);margin-bottom:1rem">Data flows in one direction. You import once, then update progress as work happens — everything else updates automatically.</p>
+      <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;font-size:12.5px">
+        <span class="badge bb">1. Order Pool</span><i class="ti ti-arrow-right" style="color:var(--tx3)"></i>
+        <span class="badge bb">2. Job Master</span><i class="ti ti-arrow-right" style="color:var(--tx3)"></i>
+        <span class="badge bb">3. Dashboard</span>
+        <span style="color:var(--tx3);margin:0 6px">+</span>
+        <span class="badge bp">Stone Orders</span><i class="ti ti-arrow-right" style="color:var(--tx3)"></i>
+        <span class="badge bp">Stone Purchase</span>
+        <span style="color:var(--tx3);margin:0 6px">+</span>
+        <span class="badge br">Repair Jobs</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-dashboard" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-layout-dashboard" style="color:var(--accent)"></i> Dashboard</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      <strong style="color:var(--tx)">What it shows:</strong> A live summary of every order — counts by zone (Red / Yellow / Green), total balance, pending stones, and stone delivery status.<br><br>
+      <strong style="color:var(--tx)">How to use:</strong> Read-only overview. The Finished, Balance, Progress and Finish date columns are calculated automatically from Job Master — nothing is edited here. Finish date appears once an order's balance reaches 0.
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-pool" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-database-import" style="color:var(--accent)"></i> Order Pool</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      <strong style="color:var(--tx)">What it does:</strong> The starting point for new work — copy data from Google Sheet / Excel (without the header row), paste it, and press Import.<br><br>
+      <strong style="color:var(--tx)">How to use:</strong>
+      <ul style="margin:.5rem 0 0;padding-left:1.2rem">
+        <li>Put the order number in the first column of the file (No.)</li>
+        <li>No merged cells allowed</li>
+        <li>If a row has different details, spread them across separate rows as in the example</li>
+        <li>Copy only the production data rows — skip the header row</li>
+      </ul>
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-jobs" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-tool" style="color:var(--accent)"></i> Job Master</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      <strong style="color:var(--tx)">What it does:</strong> The heart of production tracking — one row per item. This is the single source of truth that feeds the Dashboard.<br><br>
+      <strong style="color:var(--tx)">How to use:</strong> Search by order no, article or factory. Click the edit icon to update Received qty, Repair qty, Factory, Stone status and Finish date. Balance updates automatically. Setting Repair qty creates a Repair Job entry. To remove a whole finished order, use the Dashboard's delete button.
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-stoneorder" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-triangle" style="color:var(--accent)"></i> Stone Orders</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      <strong style="color:var(--tx)">What it does:</strong> Tracks the stones needed per item — who supplies them, how many received, and what's still outstanding.<br><br>
+      <strong style="color:var(--tx)">How to use:</strong> Edit Supplier, Ordered date, Received qty and Complete date directly in the row. When Received reaches the total, Status flips to Complete and the matching Job Master item shows Stone OK.
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-stonepurchase" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-receipt" style="color:var(--accent)"></i> Stone Purchase</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      <strong style="color:var(--tx)">What it does:</strong> Groups outstanding stones by supplier so you can send purchase requests.<br><br>
+      <strong style="color:var(--tx)">How to use:</strong> Filter by supplier, then Export PDF to send the list to that supplier. Balance is read live from Stone Orders, so it always reflects what's truly outstanding.
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-repair" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-bandage" style="color:var(--accent)"></i> Repair Jobs</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      <strong style="color:var(--tx)">What it does:</strong> Lists items sent back for rework. Entries are created automatically when you set a Repair qty in Job Master.<br><br>
+      <strong style="color:var(--tx)">How to use:</strong> Fill in the Ref. Job and the Received date when the repair returns. Once a Received date is set, the row is marked Done. Rows are sorted by sent date. Repair reason (Crook, Porosity, Deform, Polish, Stone) comes from Job Master.
+    </div>
+  </div>
+
+  <div class="card guide-sec" id="g-tips" style="display:none">
+    <div class="ch"><span class="ct"><i class="ti ti-bulb" style="color:var(--accent)"></i> Tips</span></div>
+    <div class="cb" style="font-size:13px;line-height:1.7;color:var(--tx2)">
+      • <strong style="color:var(--tx)">Zones</strong> indicate urgency by due date: Red = urgent, Yellow = approaching, Green = on track.<br>
+      • <strong style="color:var(--tx)">Re-import the same Google Sheet / Excel anytime</strong> — finished work and edits are never overwritten.<br>
+      • To add or remove a factory, use <strong style="color:var(--tx)">"Manage factories"</strong> on the Job Master page (or "+ Add factory…" in the edit window). Suppliers work the same way via <strong style="color:var(--tx)">"Manage suppliers"</strong> on the Stone Orders page.<br><br>
+
+      <strong style="color:var(--tx)">⚠️ Important — where your data lives</strong><br>
+      All data is stored in <strong style="color:var(--tx)">this browser on this computer only</strong>. There is no central server. This means:<br>
+      • Do <strong style="color:var(--tx)">not clear your browser cache / site data</strong> — it will erase everything.<br>
+      • Data does <strong style="color:var(--tx)">not</strong> follow you to another computer or another browser.<br>
+      • Avoid using Private / Incognito mode — data is wiped when the window closes.<br><br>
+
+      <strong style="color:var(--tx)">💾 Back up before clearing cache or switching computers</strong><br>
+      Use <strong style="color:var(--tx)">Backup data</strong> (left sidebar, under "Data") to download a <code>.json</code> file of everything. On the new computer or after clearing cache, open the app and use <strong style="color:var(--tx)">Restore data</strong> to load that file back. Do a backup regularly so you always have a recent copy.<br><br>
+
+      <strong style="color:var(--tx)">🧹 Keep things tidy</strong><br>
+      When an entire order is finished and delivered, delete it from the <strong style="color:var(--tx)">Dashboard</strong> using the trash button on its row. This removes all of that order's Job Master items, stones and repair entries in one step — safer than deleting rows one by one. Export a backup first if you want to keep a record.
+    </div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<div class="ov" id="ov" onclick="closeDetail()"></div>
+<div class="dp" id="dp"><button class="dclose" onclick="closeDetail()"><i class="ti ti-x"></i></button><div id="dp-content"></div></div>
+<div class="mbg" id="mbg" onclick="e=>{if(e.target===document.getElementById('mbg'))closeModal()}">
+  <div class="modal"><div id="modal-content"></div></div>
+</div>
+
+<div class="mbg" id="prod-mbg"><div class="modal" id="prod-modal-content"></div></div>
+<div class="toast" id="prod-toast"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// DATE HELPERS
+function toISO(d){if(!d)return'';const p=d.split('/');if(p.length===3)return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;return d;}
+function fromISO(d){if(!d)return'';const p=d.split('-');if(p.length===3)return`${p[2]}/${p[1]}/${p[0]}`;return d;}
+
+let SUPPLIERS = ['Vanyaa','Ideal','PinThai','PSG','Juluur'];
+const REPAIR_REASONS = ['CROOK','POROSITY','DEFORM','POLISH','STONE'];
+
+const SEED = {
+  orders:[
+    {orderDate:'8/4/2026',orderNo:'SM872884BЭ1',progress:'',dueDate:'7/6/2026',qty:1,daysElapsed:50,zone:'RED',finished:0,balance:1,factory:'PKL',finishDate:''},
+    {orderDate:'8/4/2026',orderNo:'SM8728841',progress:'',dueDate:'7/6/2026',qty:2,daysElapsed:50,zone:'RED',finished:0,balance:2,factory:'PKL',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000082',progress:'68.75%',dueDate:'8/6/2026',qty:16,daysElapsed:49,zone:'RED',finished:11,balance:5,factory:'PKL',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000084',progress:'31.43%',dueDate:'8/6/2026',qty:35,daysElapsed:49,zone:'RED',finished:11,balance:24,factory:'PKL',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',progress:'24.56%',dueDate:'29/6/2026',qty:57,daysElapsed:28,zone:'YELLOW',finished:14,balance:43,factory:'PKL',finishDate:''},
+    {orderDate:'14/5/2026',orderNo:'SP770780BП1',progress:'',dueDate:'13/7/2026',qty:1,daysElapsed:14,zone:'GREEN',finished:0,balance:1,factory:'PKL',finishDate:''},
+    {orderDate:'28/5/2026',orderNo:'JD00-000131',progress:'',dueDate:'27/7/2026',qty:1,daysElapsed:0,zone:'GREEN',finished:0,balance:1,factory:'PKL',finishDate:''}
+  ],
+  jobs:[
+    {orderDate:'8/4/2026',orderNo:'SM872884BЭ1',no:'01',itemKey:'SM872884BЭ1-kl05220418-45-Topaz Princess-01',itemType:'Necklace',article:'kl05220418',size:'45',qty:1,repair:0,received:0,balance:1,metal:'White gold (585)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'8/4/2026',orderNo:'SM8728841',no:'01',itemKey:'SM8728841-kl05220418-45-Chrmd Pear-01',itemType:'Necklace',article:'kl05220418',size:'45',qty:2,repair:0,received:0,balance:2,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000082',no:'01',itemKey:'JD00-000082-br04184700-17-Topaz Rnd-01',itemType:'Bracelet',article:'br04184700',size:'17',qty:8,repair:0,received:5,balance:3,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000082',no:'02',itemKey:'JD00-000082-br04184700-17-Lab Ruby Rnd-01',itemType:'Bracelet',article:'br04184700',size:'17',qty:8,repair:0,received:6,balance:2,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000084',no:'01',itemKey:'JD00-000084-kl03210504-4035-Chrmd Pear-01',itemType:'Necklace',article:'kl03210504',size:'4035',qty:15,repair:0,received:0,balance:15,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000084',no:'02',itemKey:'JD00-000084-kc04210404-16-Topaz Ov-01',itemType:'Ring',article:'kc04210404',size:'16',qty:2,repair:0,received:2,balance:0,metal:'White gold (585)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'9/4/2026',orderNo:'JD00-000084',no:'03',itemKey:'JD00-000084-kc04210404-16.5-Topaz Ov-01',itemType:'Ring',article:'kc04210404',size:'16.5',qty:3,repair:0,received:3,balance:0,metal:'White gold (585)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'9/4/2026',orderNo:'JD00-000084',no:'04',itemKey:'JD00-000084-kc04210460-16-Lab Sapphire Pear-01',itemType:'Ring',article:'kc04210460',size:'16',qty:2,repair:0,received:1,balance:1,metal:'White gold (585)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'9/4/2026',orderNo:'JD00-000084',no:'05',itemKey:'JD00-000084-kc04210460-16.5-Lab Sapphire Pear-01',itemType:'Ring',article:'kc04210460',size:'16.5',qty:3,repair:0,received:2,balance:1,metal:'White gold (585)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'JD00-000084',no:'06',itemKey:'JD00-000084-ps08210451-Tanzanite Rnd-00',itemType:'Studs',article:'ps08210451',size:'',qty:5,repair:0,received:0,balance:5,metal:'White gold (585)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'JD00-000084',no:'07',itemKey:'JD00-000084-ps11210456-Lab Emerald Rnd-00',itemType:'Studs',article:'ps11210456',size:'',qty:5,repair:0,received:3,balance:2,metal:'White gold (585)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'01',itemKey:'1096-kl03210504-4035-Chromd Pear-01',itemType:'Necklace',article:'kl03210504',size:'4035',qty:2,repair:0,received:0,balance:2,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'02',itemKey:'1096-kl11231161-40-Topaz Hrt-01',itemType:'Necklace',article:'kl11231161',size:'40',qty:4,repair:0,received:0,balance:4,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'03',itemKey:'1096-kc03220413-17-Citrine Ok-01',itemType:'Ring',article:'kc03220413',size:'17',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'04',itemKey:'1096-kc04220405-17-Chromd Ov-01',itemType:'Ring',article:'kc04220405',size:'17',qty:2,repair:0,received:0,balance:2,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'05',itemKey:'1096-kc04220405-17.5-Chromd Ov-01',itemType:'Ring',article:'kc04220405',size:'17.5',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'06',itemKey:'1096-kc04220422-17.5-Topaz Princess-01',itemType:'Ring',article:'kc04220422',size:'17.5',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'07',itemKey:'1096-kc08241151-16.5-Topaz Ok-01',itemType:'Ring',article:'kc08241151',size:'16.5',qty:1,repair:0,received:1,balance:0,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'08',itemKey:'1096-kc08241151-17-Topaz Ok-01',itemType:'Ring',article:'kc08241151',size:'17',qty:2,repair:0,received:2,balance:0,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'09',itemKey:'1096-kc09200455-18-Chromd Pear-01',itemType:'Ring',article:'kc09200455',size:'18',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'10',itemKey:'1096-kc09251201-16-Lab Emerald Rnd-01',itemType:'Ring',article:'kc09251201',size:'16',qty:5,repair:0,received:0,balance:5,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'11',itemKey:'1096-kc09251201-16.5-Lab Emerald Rnd-01',itemType:'Ring',article:'kc09251201',size:'16.5',qty:1,repair:0,received:1,balance:0,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'12',itemKey:'1096-kc09251201-17-Lab Emerald Rnd-01',itemType:'Ring',article:'kc09251201',size:'17',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'13',itemKey:'1096-kc09251204-17-Topaz Ok-01',itemType:'Ring',article:'kc09251204',size:'17',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'14',itemKey:'1096-kc09251205-16-Topaz Rnd-01',itemType:'Ring',article:'kc09251205',size:'16',qty:1,repair:0,received:1,balance:0,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'15',itemKey:'1096-kc09251205-17-Topaz Rnd-01',itemType:'Ring',article:'kc09251205',size:'17',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'16',itemKey:'1096-kc11102400-16-Tanzanite Rnd-01',itemType:'Ring',article:'kc11102400',size:'16',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'17',itemKey:'1096-kc11102400-17-Tanzanite Rnd-01',itemType:'Ring',article:'kc11102400',size:'17',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'18',itemKey:'1096-pd04210460-Lab Emerald Pear-00',itemType:'Pendant',article:'pd04210460',size:'',qty:1,repair:0,received:1,balance:0,metal:'White gold (585)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'19',itemKey:'1096-pd11231154-Amethyst Pear-00',itemType:'Pendant',article:'pd11231154',size:'',qty:2,repair:0,received:2,balance:0,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'20',itemKey:'1096-ps03210460-Chromd Pear-00',itemType:'Studs',article:'ps03210460',size:'',qty:4,repair:0,received:0,balance:4,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'21',itemKey:'1096-ps06160700-Tanzanite Rnd-00',itemType:'Studs',article:'ps06160700',size:'',qty:4,repair:0,received:3,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'22',itemKey:'1096-ps09200401-Tanzanite Rnd-00',itemType:'Studs',article:'ps09200401',size:'',qty:3,repair:0,received:0,balance:3,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'23',itemKey:'1096-ps09251201-Lab Emerald Rnd-00',itemType:'Studs',article:'ps09251201',size:'',qty:2,repair:0,received:0,balance:2,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'24',itemKey:'1096-ps11102400-Citrine Rnd-00',itemType:'Studs',article:'ps11102400',size:'',qty:2,repair:0,received:0,balance:2,metal:'Silver (925)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'25',itemKey:'1096-ps11102400-Chromd Rnd-00',itemType:'Studs',article:'ps11102400',size:'',qty:8,repair:0,received:0,balance:8,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'26',itemKey:'1096-ps11102400-Topaz Rnd-00',itemType:'Studs',article:'ps11102400',size:'',qty:2,repair:0,received:1,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''},
+    {orderDate:'30/4/2026',orderNo:'1096',no:'27',itemKey:'1096-sg04202511-Chromd Pear-00',itemType:'Earrings',article:'sg04202511',size:'',qty:2,repair:0,received:2,balance:0,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:'28/5/2026'},
+    {orderDate:'14/5/2026',orderNo:'SP770780BП1',no:'01',itemKey:'SP770780BП1-pd04202512-Tanzanite Pear-00',itemType:'Pendant',article:'pd04202512',size:'',qty:1,repair:0,received:0,balance:1,metal:'White gold (585)',factory:'PKL',stoneComplete:'',finishDate:''},
+    {orderDate:'28/5/2026',orderNo:'JD00-000131',no:'01',itemKey:'JD00-000131-kc08241151-17.25-Topaz Ok-01',itemType:'Ring',article:'kc08241151',size:'17.25',qty:1,repair:0,received:0,balance:1,metal:'Silver (925)',factory:'PKL',stoneComplete:'OK',finishDate:''}
+  ],
+  stoneOrders:[
+    {itemKey:'JD00-000082-br04184700-17-Lab Ruby Rnd-01',orderNo:'JD00-000082',itemType:'Bracelet',article:'br04184700',stoneType:'Lab Ruby Rnd',stoneSize:'1.9-2.0',totalQty:432,supplier:'Vanyaa',orderedDate:'26/5/2026',received:420,balance:12,complete:'FALSE',receivedDate:''},
+    {itemKey:'JD00-000084-kc04210460-16-Lab Sapphire Pear-01',orderNo:'JD00-000084',itemType:'Ring',article:'kc04210460',stoneType:'Lab Sapphire Pear',stoneSize:'9x7',totalQty:2,supplier:'Ideal',orderedDate:'26/5/2026',received:0,balance:2,complete:'FALSE',receivedDate:''},
+    {itemKey:'JD00-000084-kc04210460-16.5-Lab Sapphire Pear-01',orderNo:'JD00-000084',itemType:'Ring',article:'kc04210460',stoneType:'Lab Sapphire Pear',stoneSize:'9x7',totalQty:3,supplier:'Ideal',orderedDate:'26/5/2026',received:0,balance:3,complete:'FALSE',receivedDate:''},
+    {itemKey:'JD00-000084-ps08210451-Tanzanite Rnd-00',orderNo:'JD00-000084',itemType:'Studs',article:'ps08210451',stoneType:'Tanzanite Rnd',stoneSize:'6.00',totalQty:10,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:10,complete:'FALSE',receivedDate:''},
+    {itemKey:'JD00-000084-ps11210456-Lab Emerald Rnd-00',orderNo:'JD00-000084',itemType:'Studs',article:'ps11210456',stoneType:'Lab Emerald Rnd',stoneSize:'5.00',totalQty:10,supplier:'Vanyaa',orderedDate:'26/5/2026',received:7,balance:3,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc03220413-17-Citrine Ok-01',orderNo:'1096',itemType:'Ring',article:'kc03220413',stoneType:'Citrine Ok',stoneSize:'7x5',totalQty:1,supplier:'PinThai',orderedDate:'26/5/2026',received:0,balance:1,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc04220405-17-Chromd Ov-01',orderNo:'1096',itemType:'Ring',article:'kc04220405',stoneType:'Chromd Ov',stoneSize:'10x8',totalQty:2,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:2,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc04220405-17.5-Chromd Ov-01',orderNo:'1096',itemType:'Ring',article:'kc04220405',stoneType:'Chromd Ov',stoneSize:'10x8',totalQty:1,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:1,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc04220422-17.5-Topaz Princess-01',orderNo:'1096',itemType:'Ring',article:'kc04220422',stoneType:'Topaz Princess',stoneSize:'10x10',totalQty:1,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:1,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc09251201-16-Lab Emerald Rnd-01',orderNo:'1096',itemType:'Ring',article:'kc09251201',stoneType:'Lab Emerald Rnd',stoneSize:'6.00',totalQty:5,supplier:'Ideal',orderedDate:'26/5/2026',received:0,balance:5,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc11102400-16-Tanzanite Rnd-01',orderNo:'1096',itemType:'Ring',article:'kc11102400',stoneType:'Tanzanite Rnd',stoneSize:'6.0-6.2',totalQty:1,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:1,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-kc11102400-17-Tanzanite Rnd-01',orderNo:'1096',itemType:'Ring',article:'kc11102400',stoneType:'Tanzanite Rnd',stoneSize:'6.0-6.2',totalQty:1,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:1,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-ps03210460-Chromd Pear-00',orderNo:'1096',itemType:'Studs',article:'ps03210460',stoneType:'Chromd Pear',stoneSize:'4x3',totalQty:40,supplier:'PinThai',orderedDate:'26/5/2026',received:20,balance:20,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-ps06160700-Tanzanite Rnd-00',orderNo:'1096',itemType:'Studs',article:'ps06160700',stoneType:'Tanzanite Rnd',stoneSize:'1.6-1.8',totalQty:32,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:32,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-ps09200401-Tanzanite Rnd-00',orderNo:'1096',itemType:'Studs',article:'ps09200401',stoneType:'Tanzanite Rnd',stoneSize:'5.00',totalQty:6,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:6,complete:'FALSE',receivedDate:''},
+    {itemKey:'1096-ps11102400-Citrine Rnd-00',orderNo:'1096',itemType:'Studs',article:'ps11102400',stoneType:'Citrine Rnd',stoneSize:'4.3-4.7',totalQty:4,supplier:'PinThai',orderedDate:'26/5/2026',received:0,balance:4,complete:'FALSE',receivedDate:''},
+    {itemKey:'SP770780BП1-pd04202512-Tanzanite Pear-00',orderNo:'SP770780BП1',itemType:'Pendant',article:'pd04202512',stoneType:'Tanzanite Pear',stoneSize:'7x5',totalQty:1,supplier:'Vanyaa',orderedDate:'26/5/2026',received:0,balance:1,complete:'FALSE',receivedDate:''}
+  ],
+  stonePurchase:[
+    {supplier:'Ideal',jobId:'1096-kc09251201-16-Lab Emerald Rnd-01',orderNo:'1096',itemType:'Ring',article:'kc09251201',stoneType:'Lab Emerald Rnd',stoneDia:'6.00',totalQty:5,balance:5,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'Ideal',jobId:'JD00-000084-kc04210460-16.5-Lab Sapphire Pear-01',orderNo:'JD00-000084',itemType:'Ring',article:'kc04210460',stoneType:'Lab Sapphire Pear',stoneDia:'9x7',totalQty:3,balance:3,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'Ideal',jobId:'JD00-000084-kc04210460-16-Lab Sapphire Pear-01',orderNo:'JD00-000084',itemType:'Ring',article:'kc04210460',stoneType:'Lab Sapphire Pear',stoneDia:'9x7',totalQty:2,balance:2,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'PinThai',jobId:'1096-kc03220413-17-Citrine Ok-01',orderNo:'1096',itemType:'Ring',article:'kc03220413',stoneType:'Citrine Ok',stoneDia:'7x5',totalQty:1,balance:1,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'PinThai',jobId:'1096-ps03210460-Chromd Pear-00',orderNo:'1096',itemType:'Studs',article:'ps03210460',stoneType:'Chromd Pear',stoneDia:'4x3',totalQty:40,balance:20,orderedDate:'26/5/2026',receivedDate:'',status:'PARTIAL RECEIVE'},
+    {supplier:'PinThai',jobId:'1096-ps11102400-Citrine Rnd-00',orderNo:'1096',itemType:'Studs',article:'ps11102400',stoneType:'Citrine Rnd',stoneDia:'4.3-4.7',totalQty:4,balance:4,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'Vanyaa',jobId:'1096-kc04220405-17.5-Chromd Ov-01',orderNo:'1096',itemType:'Ring',article:'kc04220405',stoneType:'Chromd Ov',stoneDia:'10x8',totalQty:1,balance:1,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'Vanyaa',jobId:'1096-kc04220405-17-Chromd Ov-01',orderNo:'1096',itemType:'Ring',article:'kc04220405',stoneType:'Chromd Ov',stoneDia:'10x8',totalQty:2,balance:2,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'Vanyaa',jobId:'JD00-000082-br04184700-17-Lab Ruby Rnd-01',orderNo:'JD00-000082',itemType:'Bracelet',article:'br04184700',stoneType:'Lab Ruby Rnd',stoneDia:'1.9-2.0',totalQty:432,balance:12,orderedDate:'26/5/2026',receivedDate:'',status:'PARTIAL RECEIVE'},
+    {supplier:'Vanyaa',jobId:'JD00-000084-ps08210451-Tanzanite Rnd-00',orderNo:'JD00-000084',itemType:'Studs',article:'ps08210451',stoneType:'Tanzanite Rnd',stoneDia:'6.00',totalQty:10,balance:10,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'},
+    {supplier:'Vanyaa',jobId:'JD00-000084-ps11210456-Lab Emerald Rnd-00',orderNo:'JD00-000084',itemType:'Studs',article:'ps11210456',stoneType:'Lab Emerald Rnd',stoneDia:'5.00',totalQty:10,balance:3,orderedDate:'26/5/2026',receivedDate:'',status:'PARTIAL RECEIVE'},
+    {supplier:'Vanyaa',jobId:'SP770780BП1-pd04202512-Tanzanite Pear-00',orderNo:'SP770780BП1',itemType:'Pendant',article:'pd04202512',stoneType:'Tanzanite Pear',stoneDia:'7x5',totalQty:1,balance:1,orderedDate:'26/5/2026',receivedDate:'',status:'PENDING RECEIVE'}
+  ],
+  repairs:[],
+  pool:[]
+};
+
+let D={};
+let FACTORIES=['PKL','Dabaan','Ideal'];
+const SK='jeweltrack_v4';
+function loadData(){try{const s=localStorage.getItem(SK);if(s){const p=JSON.parse(s);D={...JSON.parse(JSON.stringify(SEED)),...p};if(p.factories)FACTORIES=p.factories;if(p.suppliers)SUPPLIERS=p.suppliers;}}catch(e){D=JSON.parse(JSON.stringify(SEED));} if(!D.orders)D=JSON.parse(JSON.stringify(SEED));
+  // repair legacy data
+  migrateItemStoneLinks();
+  // ensure every job with repair>0 has a matching auto repair entry
+  D.jobs.forEach(j=>{if((+j.repair||0)>0)syncRepairForJob(j);});
+}
+function save(){D.factories=FACTORIES;D.suppliers=SUPPLIERS;localStorage.setItem(SK,JSON.stringify(D));}
+function g(id){return document.getElementById(id);}
+function gv(id){return g(id).value;}
+function sh(id,h){g(id).innerHTML=h;}
+function toast(m){const e=g('toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500);}
+
+// ── Backup / Restore all data to a JSON file ──
+function backupData(){
+  const payload=JSON.stringify(D,null,2);
+  const blob=new Blob([payload],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const today=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+  a.href=url;a.download='jeweltrack-backup-'+today+'.json';
+  a.click();URL.revokeObjectURL(url);
+  toast('Backup downloaded');
+}
+function restoreData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const obj=JSON.parse(e.target.result);
+      if(!obj.jobs||!obj.orders){toast('Invalid backup file');return;}
+      if(!confirm('This will REPLACE all current data with the backup. Continue?'))return;
+      D=obj;
+      if(D.factories)FACTORIES=D.factories;
+      if(D.suppliers)SUPPLIERS=D.suppliers;
+      save();renderAll();refreshSupplierFilter();
+      toast('Data restored');
+    }catch(err){toast('Could not read file');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// NAV (sidebar + mobile)
+function navTo(page){
+  const target=g('page-'+page);
+  if(!page||!target) return;
+  document.querySelectorAll('.nav-item,.mob-nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll(`[data-page="${page}"]`).forEach(n=>n.classList.add('active'));
+  target.classList.add('active');
+}
+document.querySelectorAll('.nav-item[data-page],.mob-nav-item[data-page]').forEach(el=>{
+  el.addEventListener('click',()=>navTo(el.dataset.page));
+});
+
+// HELPERS
+function zbadge(z){if(!z)return'';const c=z.includes('RED')?'red':z.includes('YELLOW')?'yel':'grn';return`<span class="badge b${c[0]}"><span class="zdot ${c}"></span> ${z}</span>`;}
+function sbadge(s){if(!s)return'<span class="badge bgr">—</span>';if(s==='PENDING RECEIVE')return`<span class="badge by">${s}</span>`;if(s==='PARTIAL RECEIVE')return`<span class="badge bb">${s}</span>`;if(s==='RECEIVED')return`<span class="badge bg">${s}</span>`;return`<span class="badge bgr">${s}</span>`;}
+function supSel(val,idx,field){return`<select style="min-width:80px" onchange="if(this.value==='__add__'){const n=prompt('New supplier name:');if(n){SUPPLIERS.push(n);inlineSet('${field}',${idx},n);refreshSupplierFilter();}else{this.value='${val||SUPPLIERS[0]}'}}else{inlineSet('${field}',${idx},this.value)}">${SUPPLIERS.map(s=>`<option value="${s}"${s===val?' selected':''}>${s}</option>`).join('')}<option value="__add__">+ Add supplier…</option></select>`;}
+
+// INLINE SAVE
+function inlineSet(field,idx,val){
+  const map={so:D.stoneOrders,sp:D.stonePurchase,job:D.jobs,rep:D.repairs};
+  const parts=field.split('_');
+  const tbl=parts[0];const key=parts[1];
+  map[tbl][idx][key]=val;
+  // auto-calc balance for stoneOrders + sync stone purchase
+  if(tbl==='so'){
+    const r=D.stoneOrders[idx];
+    if(key==='received'){
+      r.balance=r.totalQty-(+val||0);
+      r.complete=r.balance<=0?'TRUE':'FALSE';
+    }
+    // Keep matching auto stonePurchase entry in sync
+    if(r._poolKey){
+      const sp=D.stonePurchase.find(s=>s._poolKey===r._poolKey&&s._auto);
+      if(sp){
+        sp.supplier=r.supplier; sp.balance=r.balance;
+        sp.orderedDate=r.orderedDate; sp.receivedDate=r.receivedDate;
+        sp.status=r.complete==='TRUE'?'RECEIVED':(r.received>0?'PARTIAL RECEIVE':'PENDING RECEIVE');
+      }
+    }
+  }
+  // repair status: if receivedDate set => done
+  if(tbl==='rep'&&key==='receivedDate'){
+    D.repairs[idx].repairStatus=val?'RECEIVED':'PENDING';
+  }
+  save();renderAll();
+}
+
+// Compute order stats from Job Master (single source of truth)
+function orderStats(orderNo){
+  const jobs=D.jobs.filter(j=>j.orderNo===orderNo);
+  const totalQty=jobs.reduce((s,j)=>s+(+j.qty||0),0);
+  const received=jobs.reduce((s,j)=>s+(+j.received||0),0);
+  const balance=jobs.reduce((s,j)=>s+(+j.balance||0),0);
+  const finished=received;
+  const pct=totalQty>0?(received/totalQty*100):0;
+  const jobDates=jobs.filter(j=>j.finishDate).map(j=>j.finishDate);
+  const latestFinish=jobDates.length?jobDates.sort().reverse()[0]:'';
+  return {totalQty,received,balance,finished,pct,latestFinish};
+}
+
+// Compute days elapsed since order date
+function daysSinceOrderDate(dateStr){
+  if(!dateStr) return null;
+  try{
+    const s=String(dateStr).trim();
+    const parts=s.split('/');
+    if(parts.length!==3) return null;
+    const day=parseInt(parts[0],10), mo=parseInt(parts[1],10), yr=parseInt(parts[2],10);
+    if(isNaN(day)||isNaN(mo)||isNaN(yr)) return null;
+    const ord=new Date(yr, mo-1, day);
+    if(isNaN(ord.getTime())) return null;
+    const now=new Date();
+    // Strip time component
+    const ordDay=new Date(ord.getFullYear(), ord.getMonth(), ord.getDate());
+    const nowDay=new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const diff=Math.floor((nowDay-ordDay)/(1000*60*60*24));
+    return diff;
+  }catch(e){return null;}
+}
+
+// Derive zone from days elapsed:
+//   0–15 days  → GREEN
+//   15–45 days → YELLOW
+//   > 45 days  → RED
+function zoneFromDays(days){
+  if(days==null) return 'GREEN';
+  if(days>45) return 'RED';
+  if(days>=15) return 'YELLOW';
+  return 'GREEN';
+}
+
+// DASHBOARD
+function renderDashboard(){
+  const o=D.orders;
+  // Compute zones dynamically from order date (auto-update every render)
+  o.forEach(x=>{
+    const job0=D.jobs.find(j=>j.orderNo===x.orderNo);
+    const od=(job0&&job0.orderDate)||x.orderDate||'';
+    const d=daysSinceOrderDate(od);
+    if(d!=null){x._days=d;x.zone=zoneFromDays(d);}
+  });
+  const red=o.filter(x=>x.zone==='RED').length;
+  const yel=o.filter(x=>x.zone==='YELLOW').length;
+  const grn=o.filter(x=>x.zone==='GREEN').length;
+  const bal=o.reduce((s,x)=>s+orderStats(x.orderNo).balance,0);
+  const pend=D.stoneOrders.filter(x=>x.complete==='FALSE').length;
+  const activeRepairs=D.repairs.filter(r=>!r.receivedDate).length;
+  g('dash-updated').textContent='Last updated: '+new Date().toLocaleDateString('en-GB');
+  sh('dash-metrics',`<div class="metric"><div class="ml">Total orders</div><div class="mv">${o.length}</div></div><div class="metric"><div class="ml">Red zone</div><div class="mv red">${red}</div></div><div class="metric"><div class="ml">Yellow zone</div><div class="mv yel">${yel}</div></div><div class="metric"><div class="ml">Green zone</div><div class="mv grn">${grn}</div></div><div class="metric"><div class="ml">Total balance</div><div class="mv">${bal}</div></div><div class="metric"><div class="ml">Pending stones</div><div class="mv yel">${pend}</div></div><div class="metric"><div class="ml">Active repairs</div><div class="mv red">${activeRepairs}</div></div>`);
+  sh('dash-zones',`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)"><span><span class="zdot red" style="margin-right:5px"></span>Red</span><strong>${red}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)"><span><span class="zdot yel" style="margin-right:5px"></span>Yellow</span><strong>${yel}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0"><span><span class="zdot grn" style="margin-right:5px"></span>Green</span><strong>${grn}</strong></div>`);
+  const p=D.stonePurchase.filter(x=>x.status==='PENDING RECEIVE').length;
+  const pt=D.stonePurchase.filter(x=>x.status==='PARTIAL RECEIVE').length;
+  const rv=D.stonePurchase.filter(x=>x.status==='RECEIVED').length;
+  sh('dash-stones',`<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)"><span>Pending</span><strong style="color:var(--yel)">${p}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--bd)"><span>Partial</span><strong style="color:var(--blu-tx)">${pt}</strong></div><div style="display:flex;justify-content:space-between;padding:8px 0"><span>Received</span><strong style="color:var(--grn)">${rv}</strong></div>`);
+  if(!o.length){
+    sh('dash-orders','<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--tx3)">No orders yet — go to Order Pool to import data from Google Sheet</td></tr>');
+  } else {
+    const rows = o.map(r=>{
+      try{
+        const orderNo=String(r.orderNo||'');
+        if(!orderNo) return '';
+        const st=orderStats(orderNo);
+        const pct=Math.round((st.pct||0)*100)/100;
+        const zc=r.zone==='RED'?'red':r.zone==='YELLOW'?'yel':'grn';
+        const showFinish=st.balance===0&&st.latestFinish;
+        const facs=D.jobs.filter(j=>j.orderNo===orderNo).map(j=>j.factory).filter(Boolean);
+        const factory=facs.length?[...new Set(facs)].join(', '):(r.factory||'—');
+        const job0=D.jobs.find(j=>j.orderNo===orderNo);
+        const orderDate=(job0&&job0.orderDate)||r.orderDate||'';
+        const dueDate=orderDate?addDays(orderDate,60):(r.dueDate||'');
+        const orderNoSafe=orderNo.replace(/'/g,"\\'");
+        const daysVal=(r._days!=null)?r._days:(daysSinceOrderDate(orderDate));
+        const daysDisplay=(daysVal!=null)?daysVal+' d':'—';
+        return `<tr><td style="color:var(--tx2)">${orderDate||'—'}</td><td><strong>${orderNo}</strong></td><td>${dueDate||'—'}</td><td>${zbadge(r.zone)}</td><td><span class="tag">${factory}</span></td><td><div style="display:flex;align-items:center;gap:8px"><div class="pb"><div class="pf ${zc}" style="width:${pct}%"></div></div><span style="font-size:11px">${pct>0?pct+'%':'—'}</span></div></td><td>${st.finished||0}</td><td>${st.balance||0}</td><td>${daysDisplay}</td><td>${showFinish?`<span class="badge bg">${st.latestFinish}</span>`:'<span style="color:var(--tx3)">—</span>'}</td><td><button class="btn btnd" onclick="deleteOrder('${orderNoSafe}')" title="Delete entire order"><i class="ti ti-trash"></i></button></td></tr>`;
+      }catch(err){
+        console.warn('renderDashboard row error:',err,r);
+        return '';
+      }
+    }).filter(Boolean).join('');
+    sh('dash-orders', rows || '<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--red)">Error rendering rows — check console</td></tr>');
+  }
+}
+
+// Delete an entire order — removes every Job Master row, Stone Orders, Stone Purchase,
+// Repairs and the order header for that order number.
+function deleteOrder(orderNo){
+  const jobCount=D.jobs.filter(j=>j.orderNo===orderNo).length;
+  if(!confirm('Delete the ENTIRE order "'+orderNo+'"?\n\nThis removes:\n• '+jobCount+' Job Master item(s)\n• its Stone Orders, Stone Purchase and Repair entries\n• the order from the Dashboard\n\nReasons you might do this: order finished & delivered, uploaded by mistake, or cancelled by customer.\n\nThis cannot be undone. (Tip: Backup data first.)')) return;
+  // second confirmation — type the order number to confirm
+  const typed=prompt('To permanently delete, type the order number exactly:\n\n'+orderNo);
+  if(typed===null) return;
+  if(typed.trim()!==orderNo){toast('Order number did not match — nothing deleted');return;}
+  D.jobs=D.jobs.filter(j=>j.orderNo!==orderNo);
+  D.orders=D.orders.filter(o=>o.orderNo!==orderNo);
+  D.stoneOrders=D.stoneOrders.filter(s=>s.orderNo!==orderNo);
+  D.stonePurchase=D.stonePurchase.filter(s=>s.orderNo!==orderNo);
+  D.repairs=D.repairs.filter(r=>r.orderNo!==orderNo);
+  if(D.pool) D.pool=D.pool.filter(p=>p.orderNo!==orderNo);
+  save();renderAll();toast('Order '+orderNo+' deleted');
+}
+
+// ORDERS
+function renderOrders(){
+  const q=gv('order-search').toLowerCase();const z=gv('order-zone-f');
+  const f=D.orders.filter(r=>(r.orderNo+r.factory).toLowerCase().includes(q)&&(!z||r.zone.includes(z)));
+  sh('orders-body',f.map(r=>{const pct=r.progress?parseFloat(r.progress):0;const c=r.zone==='RED'?'red':r.zone==='YELLOW'?'yel':'grn';const i=D.orders.indexOf(r);return`<tr><td style="color:var(--tx2)">${r.orderDate}</td><td><strong>${r.orderNo}</strong></td><td>${r.dueDate}</td><td>${zbadge(r.zone)}</td><td>${r.qty}</td><td>${r.finished||0}</td><td>${r.balance}</td><td><div style="display:flex;align-items:center;gap:8px"><div class="pb"><div class="pf ${c}" style="width:${pct}%"></div></div><span style="font-size:11px">${r.progress||'—'}</span></div></td><td style="white-space:nowrap"><button class="btn btns" onclick="viewOD(${i})"><i class="ti ti-eye"></i></button> <button class="btn btns" onclick="editOrder(${i})"><i class="ti ti-edit"></i></button></td></tr>`;}).join('')||'<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--tx3)">No results</td></tr>');
+}
+
+// Derive stone status for a job from Stone Orders (OK when all matching stone orders balance=0)
+function jobStoneOK(j){
+  const stones=D.stoneOrders.filter(s=>s.itemKey===j.itemKey);
+  if(stones.length===0) return j.stoneComplete==='OK'; // fallback to manual flag
+  return stones.every(s=>(+s.balance||0)<=0);
+}
+
+// JOBS
+function renderJobs(){
+  const qo=gv('job-search-order').toLowerCase();
+  const qa=gv('job-search-article').toLowerCase();
+  const qsup=gv('job-search-supplier').toLowerCase();
+  const fac=gv('job-factory-f');
+  const tp=gv('job-type-f');const fin=gv('job-fin-f');
+  const f=D.jobs.filter(r=>{
+    // supplier match: any stone order linked to this job's itemKey uses that supplier
+    let supOK=true;
+    if(qsup){
+      const linked=D.stoneOrders.filter(s=>s.itemKey===r.itemKey || (!s.itemKey && s.orderNo===r.orderNo&&s.article===r.article));
+      supOK=linked.some(s=>(s.supplier+'').toLowerCase().includes(qsup));
+    }
+    return (r.orderNo+'').toLowerCase().includes(qo)&&
+    (r.article+'').toLowerCase().includes(qa)&&
+    supOK&&
+    (!fac||r.factory===fac)&&
+    (!tp||r.itemType===tp)&&
+    (!fin||(fin==='finished'?!!r.finishDate:!r.finishDate));
+  });
+  sh('jobs-body',f.map(r=>{
+    const i=D.jobs.indexOf(r);
+    // Stone status auto-derived from Stone Orders for this item
+    const stoneStatus=getJobStoneStatus(r);
+    const fd=r.finishDate?`<span class="badge bg">${r.finishDate}</span>`:'<span class="badge bgr">WIP</span>';
+    return`<tr>
+      <td style="color:var(--tx3)">${r.no||''}</td>
+      <td style="color:var(--tx2);white-space:nowrap">${r.orderDate||'—'}</td>
+      <td><strong>${r.orderNo||''}</strong></td>
+      <td><span class="tag">${r.itemType||''}</span></td>
+      <td>${r.article||''}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td>${r.size||'—'}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
+      <td><span class="tag">${r.factory||'—'}</span></td>
+      <td>${r.qty||0}</td>
+      <td>${r.repair||0}</td>
+      <td>${r.received||0}</td>
+      <td>${r.balance||0}</td>
+      <td>${stoneStatus}</td>
+      <td>${fd}</td>
+      <td style="white-space:nowrap">
+        <button class="btn btns" onclick="editJob(${i})"><i class="ti ti-edit"></i></button>
+      </td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="16" style="text-align:center;padding:2rem;color:var(--tx3)">No results</td></tr>');
+}
+
+// Auto-derive Stone status from Stone Orders for this job
+function getJobStoneStatus(j){
+  const stones=D.stoneOrders.filter(s=>s.itemKey===j.itemKey || (!s.itemKey && s.orderNo===j.orderNo&&s.article===j.article));
+  if(!stones.length) return '<span class="badge bgr">—</span>';
+  const allComplete=stones.every(s=>(+s.balance||0)<=0);
+  const anyReceived=stones.some(s=>(+s.received||0)>0);
+  if(allComplete) return '<span class="badge bg">COMPLETE</span>';
+  if(anyReceived) return '<span class="badge bb">PARTIAL</span>';
+  return '<span class="badge by">PENDING</span>';
+}
+function inlineCalcJob(i){
+  const r=D.jobs[i];
+  r.balance=r.qty-(+r.received||0);
+  save();
+  const el=g('jbal-'+i);if(el)el.textContent=r.balance;
+}
+
+function populateJobTypeFilter(){
+  const types=[...new Set(D.jobs.map(j=>j.itemType))].sort();
+  const tf=g('job-type-f');if(tf){const cur=tf.value;tf.innerHTML='<option value="">All types</option>'+types.map(t=>`<option value="${t}"${t===cur?' selected':''}>${t}</option>`).join('');}
+  const facs=[...new Set(D.jobs.map(j=>j.factory).filter(Boolean))].sort();
+  const ff=g('job-factory-f');if(ff){const cur=ff.value;ff.innerHTML='<option value="">All factories</option>'+facs.map(t=>`<option value="${t}"${t===cur?' selected':''}>${t}</option>`).join('');}
+}
+
+// ORDER POOL — full columns
+function clearPool(){
+  const n=(D.pool||[]).length;
+  if(!n){toast('Order Pool is already empty');return;}
+  if(!confirm('Clear all '+n+' row(s) from the Order Pool import list?\n\nThis only clears the imported pool snapshot shown here. Your Job Master items and their progress are NOT affected.\n\nThis cannot be undone. (Tip: Backup data first.)'))return;
+  D.pool=[];save();renderAll();toast('Order Pool cleared');
+}
+function renderPool(){
+  const q=gv('pool-search').toLowerCase();
+  const data=D.pool||[];
+  g('pool-count').textContent=data.length+' items';
+  const f=data.filter(r=>JSON.stringify(r).toLowerCase().includes(q));
+  if(!f.length){sh('pool-body','<tr><td colspan="14" style="text-align:center;padding:2rem;color:var(--tx3)">No pool data — import from Google Sheet above</td></tr>');return;}
+  sh('pool-body',f.map(r=>`<tr>
+    <td>${r.orderNo||''}</td><td><span class="tag">${r.type||''}</span></td>
+    <td>${r.article||''}</td><td style="font-size:12px">${r.metal||''}</td>
+    <td>${r.avgWt||''}</td><td>${r.totalWt||''}</td><td>${r.wtPurity||''}</td>
+    <td>${r.size||''}</td><td>${r.qty||''}</td>
+    <td>${r.stoneType||''}</td><td>${r.stoneSizing||''}</td><td>${r.stoneDia||''}</td>
+    <td>${r.stoneQtyPer||''}</td><td>${r.totalStones||''}</td>
+  </tr>`).join(''));
+}
+
+
+function poolGroupKey(r){
+  return [r.orderNo||'',r.article||''].map(x=>(x+'').trim()).join('|');
+}
+function rowHasItemQty(r){return (parseInt(r.qty)||0)>0;}
+function sameStone(a,b){
+  return (a.stoneType||'')===(b.stoneType||'') &&
+    ((a.stoneDia||a.stoneSize||'')===(b.stoneDia||b.stoneSize||'')) &&
+    ((a.stoneSizing||a.stoneWt||'')===(b.stoneSizing||b.stoneWt||''));
+}
+function normalizePoolParentKeys(rows){
+  if(!Array.isArray(rows)) return rows||[];
+
+  // 1) Make only real item rows (qty > 0) unique. Stone sub-rows inherit a parent key later.
+  const autoSeen={};
+  rows.forEach(row=>{
+    if(rowHasItemQty(row) && !row.itemKey){row.itemKey=buildItemKey(row);row._autoKey=true;}
+    if(rowHasItemQty(row) && row._autoKey){
+      const base=row.itemKey;
+      if(autoSeen[base]==null){autoSeen[base]=0;}
+      else{
+        autoSeen[base]++;
+        row.itemKey=base.replace(/-(\d+)$/,(m,n)=>'-'+String(+n+autoSeen[base]).padStart(2,'0'));
+        if(row.itemKey===base) row.itemKey=base+'-'+String(autoSeen[base]+1).padStart(2,'0');
+      }
+    }
+  });
+
+  // 2) Link every stone row to the nearest parent item row above it.
+  // This fixes articles that repeat in multiple sizes, e.g. kc04210460 size 16 and 16.5.
+  const lastParentByOrderArticle={};
+  let lastParent='';
+  rows.forEach(row=>{
+    const gk=poolGroupKey(row);
+    if(rowHasItemQty(row)){
+      row.parentItemKey=row.itemKey;
+      lastParentByOrderArticle[gk]=row.itemKey;
+      lastParent=row.itemKey;
+    }else{
+      row.parentItemKey=row.parentItemKey || lastParentByOrderArticle[gk] || lastParent || row.itemKey || '';
+      if(row.parentItemKey && !row.itemKey) row.itemKey=row.parentItemKey;
+    }
+  });
+  return rows;
+}
+function migrateItemStoneLinks(){
+  D.pool=normalizePoolParentKeys(D.pool||[]);
+  // Backfill Stone Orders created by older versions so future lookups can use itemKey.
+  (D.stoneOrders||[]).forEach(so=>{
+    if(!so.itemKey){
+      const match=(D.pool||[]).find(p=>
+        p.parentItemKey && p.orderNo===so.orderNo && p.article===so.article &&
+        (p.stoneType||'')===(so.stoneType||'') &&
+        ((p.stoneDia||'')===(so.stoneDia||so.stoneSize||''))
+      );
+      if(match) so.itemKey=match.parentItemKey;
+    }
+    if(so.itemKey && !so.parentItemKey) so.parentItemKey=so.itemKey;
+  });
+  (D.stonePurchase||[]).forEach(sp=>{
+    if(!sp.itemKey && sp.jobId && !(sp.jobId+'').includes('|')) sp.itemKey=sp.jobId;
+  });
+}
+
+function importPoolData(){
+  const raw=g('pool-paste').value.trim();
+  if(!raw){toast('Paste data first');return;}
+  const lines=raw.split('\n').map(l=>l.split('\t').map(x=>(x||'').trim()));
+
+  // ── Find the header row by matching known column names ──
+  const HEADER_ALIASES={
+    orderNo:['order no','order number','order','№','ne','no'],
+    type:['type'],
+    article:['article'],
+    metal:['metal color, sample','metal color','metal','metal colour'],
+    avgWt:['average weight','avg weight','avg wt'],
+    totalWt:['total weight','total wt'],
+    wtPurity:['weight in purity','wt purity','weight purity','purity'],
+    size:['size'],
+    qty:['quantity','qty'],
+    stoneType:['stone type'],
+    stoneSizing:['stone sizing'],
+    stoneDia:['stone diameter, mm','stone diameter','stone dia','diameter'],
+    stoneQtyPer:['quantity','qty per','qty/pc','stone/pc'],
+    totalStones:['total stones'],
+    itemKey:['item key','itemkey','key']
+  };
+  function norm(s){return (s||'').toLowerCase().replace(/\s+/g,' ').trim();}
+
+  let headerIdx=-1, colMap={};
+  for(let i=0;i<Math.min(lines.length,6);i++){
+    const cells=lines[i].map(norm);
+    // a header row should contain at least these
+    if(cells.includes('article') && (cells.includes('type')||cells.includes('stone type'))){
+      headerIdx=i;
+      // map each field to the FIRST matching column index
+      for(const field in HEADER_ALIASES){
+        for(let ci=0;ci<cells.length;ci++){
+          if(HEADER_ALIASES[field].includes(cells[ci])){colMap[field]=ci;break;}
+        }
+      }
+      // special: "Quantity" appears twice (item qty K, stone qty O).
+      // First Quantity = qty (item), the one right after stone sizing/dia = stoneQtyPer
+      const qtyCols=[];
+      cells.forEach((c,ci)=>{if(c==='quantity'||c==='qty')qtyCols.push(ci);});
+      if(qtyCols.length>=2){colMap.qty=qtyCols[0];colMap.stoneQtyPer=qtyCols[qtyCols.length-1];}
+      break;
+    }
+  }
+
+  const rows=[];
+  if(headerIdx>=0){
+    // ── Header found: map by column index from header ──
+    const get=(cells,field)=>colMap[field]!=null?(cells[colMap[field]]||''):'';
+    for(let i=headerIdx+1;i<lines.length;i++){
+      const cells=lines[i];
+      const orderNo=get(cells,'orderNo');
+      if(!orderNo) continue; // skip sub-rows / blanks
+      const row={
+        orderNo, type:get(cells,'type'), article:get(cells,'article'), metal:get(cells,'metal'),
+        avgWt:get(cells,'avgWt'), totalWt:get(cells,'totalWt'), wtPurity:get(cells,'wtPurity'),
+        size:get(cells,'size'), qty:get(cells,'qty'),
+        stoneType:get(cells,'stoneType'), stoneSizing:get(cells,'stoneSizing'),
+        stoneDia:get(cells,'stoneDia'), stoneQtyPer:get(cells,'stoneQtyPer'),
+        totalStones:get(cells,'totalStones'), itemKey:get(cells,'itemKey')
+      };
+      if(!row.itemKey){row.itemKey=buildItemKey(row);row._autoKey=true;}
+      rows.push(row);
+    }
+  } else {
+    // ── No header: fall back to positional mapping (blank Photo col at idx 2) ──
+    lines.forEach(c=>{
+      const orderNo=c[0]||'';
+      if(['ORDER POOL','Order No',''].includes(orderNo)) return;
+      const row={
+        orderNo, type:c[1]||'', article:c[3]||'', metal:c[4]||'',
+        avgWt:c[5]||'', totalWt:c[6]||'', wtPurity:c[7]||'',
+        size:c[8]||'', qty:c[9]||'',
+        stoneType:c[10]||'', stoneSizing:c[11]||'',
+        stoneDia:c[12]||'', stoneQtyPer:c[13]||'',
+        totalStones:c[14]||'', itemKey:c[15]||''
+      };
+      if(!row.itemKey){row.itemKey=buildItemKey(row);row._autoKey=true;}
+      rows.push(row);
+    });
+  }
+
+  if(!rows.length){toast('Could not parse — include the header row when copying');return;}
+
+  // Build parentItemKey so stone sub-rows stay attached to the correct item / size.
+  normalizePoolParentKeys(rows);
+
+  D.pool=rows;
+  const r=syncJobsFromPool(rows);
+  syncStoneOrdersFromPool(rows);
+  syncStonePurchaseFromPool();
+  save();renderAll();
+  let msg=r.created+' new, '+r.updated+' updated in Job Master';
+  if(r.skipped>0) msg+=' · '+r.skipped+' duplicate'+(r.skipped>1?'s':'')+' skipped';
+  toast(msg);
+  g('pool-paste').value='';
+}
+
+// Push Order Pool rows into Job Master.
+// Only rows with qty > 0 become Job Master items (rows without qty are stone sub-rows).
+// Stone sub-rows are handled separately by syncStoneOrdersFromPool().
+function syncJobsFromPool(rows){
+  let created=0, updated=0, skipped=0;
+  const lineCounters={};
+  D.jobs.forEach(j=>{
+    const n=parseInt(j.no)||0;
+    if(!lineCounters[j.orderNo]||n>lineCounters[j.orderNo]) lineCounters[j.orderNo]=n;
+  });
+  const seenThisBatch=new Set();
+  rows.forEach(p=>{
+    // ── Only rows with a qty value become Job items ──
+    const qty=parseInt(p.qty)||0;
+    if(!qty) return; // stone sub-row — skip for Job Master
+    if(!p.itemKey) return;
+    // de-duplicate identical item keys within the same paste
+    if(seenThisBatch.has(p.itemKey)){skipped++;return;}
+    seenThisBatch.add(p.itemKey);
+
+    const existing=D.jobs.find(j=>j.itemKey===p.itemKey);
+    if(existing){
+      // already in Job Master → update descriptive fields, keep progress
+      existing.orderNo=p.orderNo;
+      existing.itemType=p.type;
+      existing.article=p.article;
+      existing.size=p.size;
+      existing.metal=p.metal;
+      existing.stoneType=p.stoneType || existing.stoneType || '';
+      existing.stoneDia=p.stoneDia || p.stoneSize || existing.stoneDia || '';
+      existing.totalStones=p.totalStones || existing.totalStones || '';
+      if(qty>0){
+        existing.qty=qty;
+        existing.balance=qty-(+existing.received||0);
+      }
+      updated++;
+    }else{
+      lineCounters[p.orderNo]=(lineCounters[p.orderNo]||0)+1;
+      const no=String(lineCounters[p.orderNo]).padStart(2,'0');
+      D.jobs.push({
+        orderDate:new Date().toLocaleDateString('en-GB'),
+        orderNo:p.orderNo, no, itemKey:p.itemKey,
+        itemType:p.type, article:p.article, size:p.size,
+        stoneType:p.stoneType || '',
+        stoneDia:p.stoneDia || p.stoneSize || '',
+        totalStones:p.totalStones || '',
+        qty, repair:0, received:0, balance:qty,
+        metal:p.metal, factory:FACTORIES[0]||'PKL',
+        stoneComplete:'', finishDate:''
+      });
+      created++;
+      if(!D.orders.find(o=>o.orderNo===p.orderNo)){
+        D.orders.push({
+          orderDate:new Date().toLocaleDateString('en-GB'),
+          orderNo:p.orderNo, progress:'', dueDate:'', qty:0,
+          daysElapsed:0, zone:'GREEN', finished:0, balance:0,
+          factory:FACTORIES[0]||'PKL', finishDate:''
+        });
+      }
+    }
+  });
+  return {created,updated,skipped};
+}
+
+// Build Item Key: OrderNo-Article-Size-StoneType-NN (NN=01 if sized, 00 if no size)
+function buildItemKey(r){
+  // Item Key: ORDER NO + ARTICLE + METAL + SIZE + QTY + STONE TYPE + STONE DIA
+  const parts=[
+    r.orderNo||'', r.article||'', r.metal||'',
+    r.size||'', r.qty||'', r.stoneType||'', r.stoneDia||''
+  ].map(x=>(x+'').trim()).filter(Boolean);
+  return parts.join('-');
+}
+
+
+// Infer stone fields for legacy Job Master rows.
+// This is needed when old localStorage jobs do not have stoneType,
+// but the itemKey still contains the stone name.
+function inferStoneFromItemKey(j){
+  const out={stoneType:'',stoneDia:'',totalStones:''};
+  if(!j || !j.itemKey) return out;
+
+  // Prefer exact linked data first.
+  const so=(D.stoneOrders||[]).filter(s=>s.itemKey===j.itemKey);
+  if(so.length){
+    out.stoneType=so.map(s=>s.stoneType||'').filter(Boolean).join('<br>');
+    out.stoneDia=so.map(s=>s.stoneDia||s.stoneSize||'').filter(Boolean).join('<br>');
+    out.totalStones=so.reduce((sum,s)=>sum+(+s.totalQty||0),0)||'';
+    return out;
+  }
+
+  let rest=String(j.itemKey||'').trim();
+
+  // Remove known left-side fields without splitting by hyphen,
+  // because order numbers can also contain hyphens, e.g. JD00-000084.
+  [j.orderNo,j.article,j.metal,j.size,j.qty].forEach(v=>{
+    v=String(v||'').trim();
+    if(v && rest.startsWith(v+'-')) rest=rest.slice(v.length+1);
+  });
+
+  // Remove known right-side fields.
+  const sd=String(j.stoneDia||'').trim();
+  if(sd && rest.endsWith('-'+sd)) rest=rest.slice(0,-(sd.length+1));
+  rest=rest.replace(/-\d+$/,''); // legacy suffix 00/01/02
+  rest=rest.replace(/^-+|-+$/g,'').trim();
+
+  // Guard against non-stone leftovers.
+  if(rest && rest!==String(j.size||'') && rest!==String(j.qty||'')){
+    out.stoneType=rest;
+  }
+  return out;
+}
+
+function findPoolRowForJob(j){
+  const pool=D.pool||[];
+  return pool.find(p=>p.parentItemKey && j.itemKey && p.parentItemKey===j.itemKey && p.stoneType)
+      || pool.find(p=>p.itemKey && j.itemKey && p.itemKey===j.itemKey)
+      || pool.find(p=>
+        (p.orderNo||'')===(j.orderNo||'') &&
+        (p.article||'')===(j.article||'') &&
+        (p.metal||'')===(j.metal||'') &&
+        String(p.size||'')===String(j.size||'') &&
+        String(p.qty||'')===String(j.qty||'')
+      )
+      || {};
+}
+
+function hydrateJobStoneFields(){
+  (D.jobs||[]).forEach(j=>{
+    const p=findPoolRowForJob(j);
+    const inferred=inferStoneFromItemKey(j);
+
+    if(!j.stoneType) j.stoneType = p.stoneType || inferred.stoneType || '';
+    if(!j.stoneDia) j.stoneDia = p.stoneDia || p.stoneSize || inferred.stoneDia || '';
+    if(!j.totalStones) j.totalStones = p.totalStones || inferred.totalStones || '';
+  });
+}
+
+// ── STONE ORDERS: auto-generated from Order Pool (every row with a stoneType) ──
+// Preserves user edits (supplier, orderedDate, received, receivedDate) for existing entries.
+function syncStoneOrdersFromPool(rows){
+  rows=normalizePoolParentKeys(rows||[]);
+  const currentKeys=new Set();
+  rows.forEach(p=>{
+    if(!p.stoneType) return; // skip rows with no stone data
+    const parentKey = p.parentItemKey || (rowHasItemQty(p)?p.itemKey:'');
+    if(!parentKey) return;
+
+    // Composite key must include parent itemKey. This prevents same article in different sizes
+    // from sharing stones incorrectly.
+    const soKey = [parentKey, p.stoneType, p.stoneDia||'', p.stoneSizing||''].join('|');
+    currentKeys.add(soKey);
+
+    const totalQty = parseInt(p.totalStones) || parseInt(p.stoneQtyPer) || 0;
+    const parentRow = rows.find(r => r.itemKey===parentKey && rowHasItemQty(r)) || {};
+    const itemType = parentRow.type || p.type || '';
+
+    // Preserve edits from both the fixed key and older generated keys.
+    const existing = D.stoneOrders.find(s =>
+      s._poolKey===soKey ||
+      (s.itemKey===parentKey && (s.stoneType||'')===(p.stoneType||'') && ((s.stoneDia||s.stoneSize||'')===(p.stoneDia||'')))
+    );
+
+    if(existing){
+      existing._poolKey = soKey;
+      existing.itemKey = parentKey;
+      existing.parentItemKey = parentKey;
+      existing.orderNo = p.orderNo;
+      existing.itemType = itemType;
+      existing.article = p.article;
+      existing.stoneType = p.stoneType;
+      existing.stoneSize = p.stoneSizing || '';
+      existing.stoneDia = p.stoneDia || '';
+      existing.stoneWt = p.stoneSizing || '';
+      existing.totalQty = totalQty;
+      existing.balance = existing.totalQty - (parseInt(existing.received)||0);
+      existing.complete = existing.balance <= 0 ? 'TRUE' : 'FALSE';
+    } else {
+      D.stoneOrders.push({
+        _poolKey: soKey,
+        itemKey: parentKey,
+        parentItemKey: parentKey,
+        orderNo: p.orderNo,
+        itemType: itemType,
+        article: p.article,
+        stoneType: p.stoneType,
+        stoneSize: p.stoneSizing || '',
+        stoneDia: p.stoneDia || '',
+        stoneWt: p.stoneSizing || '',
+        totalQty: totalQty,
+        supplier: SUPPLIERS[0] || '',
+        orderedDate: '',
+        received: 0,
+        balance: totalQty,
+        complete: 'FALSE',
+        receivedDate: ''
+      });
+    }
+  });
+}
+
+// ── STONE PURCHASE: rebuilt from Stone Orders grouped by supplier ──
+function syncStonePurchaseFromPool(){
+  // Remove only auto-generated entries (those with _poolKey), keep manual ones
+  D.stonePurchase = D.stonePurchase.filter(s => !s._auto);
+  D.stoneOrders.forEach(so=>{
+    if(!so._poolKey) return;
+    const spKey = so._poolKey;
+    D.stonePurchase.push({
+      _auto: true,
+      _poolKey: spKey,
+      supplier: so.supplier || SUPPLIERS[0] || '',
+      jobId: so.itemKey || spKey,
+      itemKey: so.itemKey || '',
+      orderNo: so.orderNo,
+      itemType: so.itemType,
+      article: so.article,
+      stoneType: so.stoneType,
+      stoneDia: so.stoneDia || so.stoneSize || '',
+      stoneWt: so.stoneWt || so.stoneSizing || '',
+      totalQty: so.totalQty,
+      balance: so.balance,
+      orderedDate: so.orderedDate || '',
+      receivedDate: so.receivedDate || '',
+      status: so.complete==='TRUE' ? 'RECEIVED' : (so.received>0 ? 'PARTIAL RECEIVE' : 'PENDING RECEIVE')
+    });
+  });
+}
+
+// STONE ORDERS — inline Supplier, Ordered Date, Received editable
+function renderStoneOrders(){
+  const qo=gv('so-search-order').toLowerCase();
+  const qa=gv('so-search-article').toLowerCase();
+  const qst=gv('so-search-stone').toLowerCase();
+  const qsz=gv('so-search-size').toLowerCase();
+  const c=gv('so-complete-f');const s=gv('so-supplier-f');
+  const f=D.stoneOrders.filter(r=>
+    (r.orderNo+'').toLowerCase().includes(qo)&&
+    (r.article+'').toLowerCase().includes(qa)&&
+    ((r.stoneType+'').toLowerCase().includes(qst))&&
+    ((r.stoneDia||r.stoneSize||'').toLowerCase().includes(qsz)||(r.stoneWt||r.stoneSizing||'').toLowerCase().includes(qsz))&&
+    (!c||r.complete===c)&&(!s||r.supplier===s)
+  );
+  sh('so-body',f.map(r=>{
+    const i=D.stoneOrders.indexOf(r);
+    const comp=r.complete==='TRUE'?'<span class="badge bg">Complete</span>':'<span class="badge by">Pending</span>';
+    return`<tr>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.itemType}</span></td>
+      <td>${r.stoneType}</td>
+      <td>${r.stoneDia||r.stoneSize||''}</td>
+      <td>${r.totalQty}</td>
+      <td>${supSel(r.supplier,i,'so_supplier')}</td>
+      <td><input type="date" lang="en" value="${toISO(r.orderedDate)}" onchange="inlineSet('so_orderedDate',${i},fromISO(this.value))"></td>
+      <td><input type="number" value="${r.received||0}" style="width:65px" onchange="inlineSet('so_received',${i},+this.value)"></td>
+      <td id="sobal-${i}">${r.balance||0}</td>
+      <td>${comp}</td>
+      <td><input type="date" lang="en" value="${toISO(r.receivedDate)}" onchange="inlineSet('so_receivedDate',${i},fromISO(this.value))"></td>
+      <td><button class="btn btns" onclick="viewSODetail(${i})"><i class="ti ti-eye"></i></button></td>
+    </tr>`;
+  }).join('')||'<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--tx3)">No results</td></tr>');
+}
+
+// STONE PURCHASE — grouped by supplier, each in a card
+function renderStonePurchase(){
+  const qs=gv('sp-search').toLowerCase();const st=gv('sp-status-f');const selSup=gv('sp-supplier-f');
+  // Hide rows that are fully received (stone status = COMPLETE in Stone Orders)
+  const isComplete=r=>{
+    const so=D.stoneOrders.find(s=>s._poolKey===r._poolKey || s.itemKey===r.jobId || (!s.itemKey && s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
+    if(so) return (+so.balance||0)<=0 || so.complete==='TRUE';
+    return r.status==='RECEIVED' || (+r.balance||0)<=0;
+  };
+  const all=D.stonePurchase
+    .filter(r=>!isComplete(r))
+    .filter(r=>(r.supplier+r.orderNo+r.stoneType).toLowerCase().includes(qs)&&(!st||r.status===st)&&(!selSup||r.supplier===selSup));
+  const sups=[...new Set(all.map(r=>r.supplier))].sort();
+  if(!sups.length){sh('sp-content','<div style="text-align:center;padding:2rem;color:var(--tx3)">No results</div>');return;}
+  sh('sp-content',sups.map(sup=>{
+    const rows=all.filter(r=>r.supplier===sup);
+    const pending=rows.filter(r=>r.status!=='RECEIVED').length;
+    return`<div class="sp-view">
+      <div class="sp-header"><span><i class="ti ti-diamond" style="margin-right:6px"></i>${sup} <span style="font-size:12px;font-weight:400;margin-left:8px">${pending} pending / ${rows.length} total</span></span></div>
+      <table>
+        <thead><tr><th>Order no</th><th>Type</th><th>Stone type</th><th>Stone size</th><th>Total</th><th>Balance</th><th>Ordered</th><th>Status</th></tr></thead>
+        <tbody>${rows.map(r=>{const i=D.stonePurchase.indexOf(r);
+          // balance from matching stone order
+          const soMatch=D.stoneOrders.find(s=>s._poolKey===r._poolKey || s.itemKey===r.jobId || (!s.itemKey && s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
+          const displayBal=soMatch!==undefined?soMatch.balance:r.balance;
+          return`<tr>
+          <td>${r.orderNo}</td>
+          <td><span class="tag">${r.itemType}</span></td>
+          <td>${r.stoneType}</td>
+          <td>${r.stoneDia||r.stoneSize||''}</td>
+          <td>${r.totalQty}</td>
+          <td><strong>${displayBal}</strong></td>
+          <td>${r.orderedDate}</td>
+          <td>${sbadge(r.status)}</td>
+        </tr>`;}).join('')}</tbody>
+      </table>
+    </div>`;
+  }).join(''));
+}
+function inlineSPDate(i,val){
+  D.stonePurchase[i].receivedDate=val;
+  if(val){
+    const r=D.stonePurchase[i];
+    r.status=r.balance<=0?'RECEIVED':'PARTIAL RECEIVE';
+  }
+  save();renderStonePurchase();
+}
+
+// Export the currently-filtered Stone Purchase list to an Excel file, grouped by supplier
+function exportStonePurchaseExcel(){
+  if(typeof XLSX==='undefined'){toast('Excel library still loading — try again');return;}
+  const qs=gv('sp-search').toLowerCase();const st=gv('sp-status-f');const selSup=gv('sp-supplier-f');
+  const all=D.stonePurchase.filter(r=>(r.supplier+r.orderNo+r.stoneType).toLowerCase().includes(qs)&&(!st||r.status===st)&&(!selSup||r.supplier===selSup));
+  if(!all.length){toast('Nothing to export');return;}
+  const sups=[...new Set(all.map(r=>r.supplier))].sort();
+  const today=new Date().toLocaleDateString('en-GB');
+  const wb=XLSX.utils.book_new();
+  // one sheet per supplier
+  sups.forEach(sup=>{
+    const rows=all.filter(r=>r.supplier===sup).map(r=>{
+      const soMatch=D.stoneOrders.find(s=>s._poolKey===r._poolKey || s.itemKey===r.jobId || (!s.itemKey && s.orderNo===r.orderNo&&s.stoneType===r.stoneType));
+      const bal=soMatch!==undefined?soMatch.balance:r.balance;
+      return {
+        'Order no':r.orderNo,'Type':r.itemType,'Stone type':r.stoneType,
+        'Size':r.stoneDia,'Total':r.totalQty,'Balance':bal,
+        'Ordered':r.orderedDate,'Status':statusLabel(r.status)
+      };
+    });
+    const ws=XLSX.utils.json_to_sheet(rows);
+    ws['!cols']=[{wch:14},{wch:10},{wch:18},{wch:10},{wch:8},{wch:8},{wch:12},{wch:10}];
+    // sheet name max 31 chars, no special chars
+    const safe=sup.replace(/[\\\/\?\*\[\]:]/g,'').substring(0,31)||'Supplier';
+    XLSX.utils.book_append_sheet(wb,ws,safe);
+  });
+  XLSX.writeFile(wb,'stone-purchase-'+(sups.length===1?sups[0].replace(/[^a-zA-Z0-9ก-๙]/g,'')+'-':'')+today.replace(/\//g,'-')+'.xlsx');
+  toast('Excel exported');
+}
+function statusLabel(s){return s==='RECEIVED'?'Received':s==='PARTIAL RECEIVE'?'Partial':'Pending';}
+
+// REPAIR — inline Ref.Job, Reason dropdown, Received Date
+function renderRepairs(){
+  const qr=gv('rep-search-ref').toLowerCase();
+  const qo=gv('rep-search-order').toLowerCase();
+  const qa=gv('rep-search-article').toLowerCase();
+  const qf=gv('rep-search-factory').toLowerCase();
+  if(!D.repairs.length){sh('repair-body','<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--tx3)">No repair jobs — set Repair qty in Job Master to generate entries here</td></tr>');return;}
+  // sort by sent date (ISO compare) but keep original index for inline edits
+  let sorted=D.repairs.map((r,i)=>({r,i})).sort((a,b)=>{
+    const da=toISO(a.r.sentDate)||'9999',db=toISO(b.r.sentDate)||'9999';
+    return da<db?-1:da>db?1:0;
+  });
+  sorted=sorted.filter(({r})=>
+    (r.refJob+'').toLowerCase().includes(qr)&&
+    (r.orderNo+'').toLowerCase().includes(qo)&&
+    (r.article+'').toLowerCase().includes(qa)&&
+    (r.factory+'').toLowerCase().includes(qf)
+  );
+  if(!sorted.length){sh('repair-body','<tr><td colspan="9" style="text-align:center;padding:2rem;color:var(--tx3)">No results</td></tr>');return;}
+  sh('repair-body',sorted.map(({r,i})=>{
+    return`<tr>
+      <td>${r.sentDate||'<span style="color:var(--tx3)">—</span>'}</td>
+      <td><div style="display:flex;gap:4px;align-items:center"><span style="flex:1;min-width:80px;color:var(--tx2);${r.refJob?'':'font-style:italic'}">${r.refJob||'<span style="color:var(--tx3)">—</span>'}</span><button class="btn btns" onclick="openRefJobModal(${i})" title="Edit Ref. job"><i class="ti ti-edit"></i></button></div></td>
+      <td>${r.orderNo}</td>
+      <td><span class="tag">${r.type}</span></td>
+      <td>${r.article}</td>
+      <td>${r.size||'—'}</td>
+      <td>${r.qty}</td>
+      <td><span class="tag">${r.factory}</span></td>
+      <td><span class="badge br">${r.repairReason||'—'}</span></td>
+    </tr>`;
+  }).join(''));
+}
+
+// Export current Repair Jobs (filtered) to PDF, grouped by factory — to send to workshops
+
+// Open modal to edit Ref. job for a repair entry
+function openRefJobModal(repIdx){
+  const r = D.repairs[repIdx];
+  if(!r){toast('Repair entry not found');return;}
+  openModal(`<h3><i class="ti ti-edit" style="color:var(--accent)"></i> Set Ref. job</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${r.orderNo} · ${r.article} · ${r.type}</p>
+    <div class="fg"><label class="fl">Ref. job</label><input type="text" id="ref-job-input" value="${r.refJob||''}" placeholder="Enter reference job number..." style="width:100%" autofocus></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btnp" onclick="saveRefJob(${repIdx})"><i class="ti ti-check"></i> Save</button>
+    </div>`);
+  setTimeout(()=>{const el=document.getElementById('ref-job-input');if(el)el.focus();},50);
+}
+
+function saveRefJob(repIdx){
+  const val=(document.getElementById('ref-job-input')||{value:''}).value.trim();
+  D.repairs[repIdx].refJob=val;
+  save();closeModal();renderAll();
+  toast(val?'Ref. job saved: '+val:'Ref. job cleared');
+}
+
+function exportRepairsPDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF){toast('PDF library still loading — try again');return;}
+  const qr=gv('rep-search-ref').toLowerCase();const qo=gv('rep-search-order').toLowerCase();
+  const qa=gv('rep-search-article').toLowerCase();const qf=gv('rep-search-factory').toLowerCase();
+  const all=D.repairs.filter(r=>
+    (r.refJob+'').toLowerCase().includes(qr)&&(r.orderNo+'').toLowerCase().includes(qo)&&
+    (r.article+'').toLowerCase().includes(qa)&&(r.factory+'').toLowerCase().includes(qf)
+  );
+  if(!all.length){toast('Nothing to export');return;}
+  const facs=[...new Set(all.map(r=>r.factory||'—'))].sort();
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const today=new Date().toLocaleDateString('en-GB');
+  let y=16;
+  doc.setFontSize(15);doc.setTextColor(27,77,140);
+  doc.text('Repair Jobs',14,y);
+  doc.setFontSize(9);doc.setTextColor(120);
+  doc.text('Generated: '+today,14,y+5);
+  y+=12;
+  facs.forEach(fac=>{
+    const rows=all.filter(r=>(r.factory||'—')===fac).map(r=>[
+      r.sentDate||'-',r.refJob||'-',r.orderNo,r.type,r.article,r.size||'-',
+      String(r.qty),r.repairReason||'-'
+    ]);
+    if(y>180){doc.addPage();y=16;}
+    doc.setFontSize(11);doc.setTextColor(91,63,140);
+    doc.text('Factory: '+fac+'  ('+rows.length+' items)',14,y);y+=2;
+    doc.autoTable({
+      startY:y,
+      head:[['Sent','Ref. job','Order','Type','Article','Size','Qty','Reason']],
+      body:rows,theme:'grid',
+      headStyles:{fillColor:[27,77,140],fontSize:8,halign:'left'},
+      bodyStyles:{fontSize:8},margin:{left:14,right:14},tableLineWidth:0.1
+    });
+    y=doc.lastAutoTable.finalY+12;
+  });
+  doc.save('repair-jobs-'+today.replace(/\//g,'-')+'.pdf');
+  toast('PDF exported');
+}
+
+function populateSpSupplierFilter(){
+  const sups=[...new Set(D.stonePurchase.map(x=>x.supplier))].sort();
+  g('sp-supplier-f').innerHTML='<option value="">All suppliers</option>'+sups.map(s=>`<option value="${s}">${s}</option>`).join('');
+  const soSups=[...new Set(D.stoneOrders.map(x=>x.supplier))].sort();
+  g('so-supplier-f').innerHTML='<option value="">All suppliers</option>'+soSups.map(s=>`<option value="${s}">${s}</option>`).join('');
+}
+
+// DETAIL PANEL
+function viewOD(idx){
+  const r=D.orders[idx];
+  const jobs=D.jobs.filter(j=>j.orderNo===r.orderNo);
+  const stones=D.stoneOrders.filter(s=>s.orderNo===r.orderNo);
+  sh('dp-content',`<h2 style="font-size:18px;font-weight:500;margin-bottom:1rem">${r.orderNo}</h2>
+    <dl class="dl"><dt>Order date</dt><dd>${r.orderDate}</dd><dt>Due date</dt><dd>${r.dueDate}</dd><dt>Factory</dt><dd>${r.factory}</dd><dt>Zone</dt><dd>${zbadge(r.zone)}</dd><dt>Qty</dt><dd>${r.qty}</dd><dt>Finished</dt><dd>${r.finished||0}</dd><dt>Balance</dt><dd>${r.balance}</dd><dt>Progress</dt><dd>${r.progress||'—'}</dd></dl>
+    <hr class="divider">
+    <p style="font-size:13px;font-weight:500;margin-bottom:.75rem">Job items (${jobs.length})</p>
+    ${jobs.map(j=>`<div class="srow"><div class="sn">${j.itemType} — ${j.article}${j.size?' sz '+j.size:''}</div><div class="sm">Qty: ${j.qty} | Rcvd: ${j.received||0} | Balance: ${j.balance} | Stone: ${j.stoneComplete==='OK'?'✓ OK':'pending'}${j.finishDate?' | Done: '+j.finishDate:''}</div></div>`).join('')||'<p style="font-size:13px;color:var(--tx3)">None</p>'}
+    <hr class="divider">
+    <p style="font-size:13px;font-weight:500;margin-bottom:.75rem">Stones (${stones.filter(s=>s.complete==='FALSE').length} pending)</p>
+    ${stones.map(s=>`<div class="srow"><div class="sn">${s.stoneType} ${s.stoneSize}</div><div class="sm">Supplier: ${s.supplier} | Total: ${s.totalQty} | Rcvd: ${s.received||0} | Balance: ${s.balance||0} | <span style="color:${s.complete==='TRUE'?'var(--grn)':'var(--yel)'}">${s.complete==='TRUE'?'Complete':'Pending'}</span></div></div>`).join('')||'<p style="font-size:13px;color:var(--tx3)">None</p>'}`);
+  openDetail();
+}
+function viewSODetail(idx){
+  const r=D.stoneOrders[idx];
+  sh('dp-content',`<h2 style="font-size:18px;font-weight:500;margin-bottom:1rem">${r.stoneType}</h2>
+    <dl class="dl"><dt>Order no</dt><dd>${r.orderNo}</dd><dt>Type</dt><dd>${r.itemType}</dd><dt>Article</dt><dd>${r.article}</dd><dt>Stone size</dt><dd>${r.stoneSize}</dd><dt>Total qty</dt><dd>${r.totalQty}</dd><dt>Supplier</dt><dd>${r.supplier}</dd><dt>Ordered</dt><dd>${r.orderedDate||'—'}</dd><dt>Received</dt><dd>${r.received||0}</dd><dt>Balance</dt><dd>${r.balance||0}</dd><dt>Status</dt><dd>${r.complete==='TRUE'?'✓ Complete':'Pending'}</dd><dt>Rcvd date</dt><dd>${r.receivedDate||'—'}</dd></dl>`);
+  openDetail();
+}
+function openDetail(){g('ov').classList.add('open');g('dp').classList.add('open');}
+function closeDetail(){g('ov').classList.remove('open');g('dp').classList.remove('open');}
+
+// MODAL
+function openModal(html){sh('modal-content',html);g('mbg').classList.add('open');}
+function closeModal(){g('mbg').classList.remove('open');}
+
+// EDIT MODALS
+function editOrder(idx){
+  const r=D.orders[idx];
+  openModal(`<h3>Edit order ${r.orderNo}</h3>
+    <div class="fr"><div class="fg"><label class="fl">Progress %</label><input id="ep" value="${r.progress||''}"></div><div class="fg"><label class="fl">Finished items</label><input type="number" id="ef" value="${r.finished||0}"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Balance</label><input type="number" id="eb" value="${r.balance||0}"></div><div class="fg"><label class="fl">Finish date</label><input type="date" lang="en" id="efd" value="${toISO(r.finishDate)}"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Zone</label><select id="ez"><option value="RED"${r.zone==='RED'?' selected':''}>Red</option><option value="YELLOW"${r.zone==='YELLOW'?' selected':''}>Yellow</option><option value="GREEN"${r.zone==='GREEN'?' selected':''}>Green</option></select></div><div class="fg"><label class="fl">Days elapsed</label><input type="number" id="ede" value="${r.daysElapsed||0}"></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btnp" onclick="saveOrder(${idx})">Save</button></div>`);
+}
+function saveOrder(idx){D.orders[idx].progress=gv('ep');D.orders[idx].finished=+gv('ef')||0;D.orders[idx].balance=+gv('eb')||0;D.orders[idx].finishDate=fromISO(gv('efd'));D.orders[idx].zone=gv('ez');D.orders[idx].daysElapsed=+gv('ede')||0;save();closeModal();renderAll();toast('Order updated');}
+
+function factorySel(id,cur){
+  return `<select id="${id}" onchange="if(this.value==='__add__'){const n=prompt('New factory name:');if(n){FACTORIES.push(n);save();this.innerHTML=factoryOpts(n);}else{this.value='${cur||FACTORIES[0]}'}}">${factoryOpts(cur)}</select>`;
+}
+function factoryOpts(cur){
+  return FACTORIES.map(f=>`<option value="${f}"${f===cur?' selected':''}>${f}</option>`).join('')+`<option value="__add__">+ Add factory…</option>`;
+}
+// Repopulate the Stone Orders supplier filter dropdown after the list changes
+function refreshSupplierFilter(){
+  const sel=g('so-supplier-f');if(sel){const cur=sel.value;sel.innerHTML='<option value="">All suppliers</option>'+SUPPLIERS.map(s=>`<option value="${s}"${s===cur?' selected':''}>${s}</option>`).join('');}
+  const sps=g('sp-supplier-f');if(sps){const cur=sps.value;sps.innerHTML='<option value="">All suppliers</option>'+SUPPLIERS.map(s=>`<option value="${s}"${s===cur?' selected':''}>${s}</option>`).join('');}
+  save();renderAll();
+}
+// Manage list (add / remove names) via simple prompts
+function manageList(which){
+  const list = which==='supplier'?SUPPLIERS:FACTORIES;
+  const label = which==='supplier'?'Suppliers':'Factories';
+  const current = list.map((x,i)=>`${i+1}. ${x}`).join('\n');
+  const action = prompt(`${label}:\n${current}\n\nType a NEW name to add it,\nor type the exact name to REMOVE it.\n(Leave blank to cancel)`);
+  if(!action) return;
+  const idx = list.findIndex(x=>x.toLowerCase()===action.trim().toLowerCase());
+  if(idx>=0){
+    if(list.length<=1){toast('Cannot remove the last one');return;}
+    list.splice(idx,1);
+    toast('Removed: '+action.trim());
+  }else{
+    list.push(action.trim());
+    toast('Added: '+action.trim());
+  }
+  if(which==='supplier') refreshSupplierFilter();
+  else {save();renderAll();}
+}
+function editJob(idx){
+  const r=D.jobs[idx];
+  openModal(`<h3>Update job item</h3>
+    <p style="font-size:12px;color:var(--tx2);margin-bottom:1rem">${r.itemKey}</p>
+    <div class="fr">
+      <div class="fg"><label class="fl">Order date</label><input type="date" id="jod" lang="en" value="${toISO(r.orderDate)}"></div>
+      <div class="fg"><label class="fl">Factory</label>${factorySel('jfac',r.factory)}</div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Received qty</label><input type="number" id="jrc" value="${r.received||0}"></div>
+      <div class="fg"><label class="fl">Finish date</label><input type="date" id="jf" lang="en" value="${toISO(r.finishDate)}"></div>
+    </div>
+    <div style="border-top:1px solid var(--bd);margin:1rem 0 .9rem;padding-top:.9rem">
+      <div class="fl" style="margin-bottom:.75rem;color:var(--accent)">Repair (optional)</div>
+      <div class="fr">
+        <div class="fg"><label class="fl">Repair qty</label><input type="number" id="jr2" value="${r.repair||0}"></div>
+        <div class="fg"><label class="fl">Repair reason</label><select id="jrr"><option value="">—</option>${REPAIR_REASONS.map(rs=>`<option value="${rs}"${rs===r.repairReason?' selected':''}>${rs}</option>`).join('')}</select></div>
+      </div>
+      <div class="fg"><label class="fl">Repair sent date</label><input type="date" id="jrsd" lang="en" value="${toISO(r.repairSentDate)}"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btnp" onclick="saveJob(${idx})">Save</button></div>`);
+}
+function saveJob(idx){
+  const j=D.jobs[idx];
+  // Order date — sync to all jobs of same order + recompute due date
+  const newOrderDate=fromISO(gv('jod'));
+  if(newOrderDate){
+    j.orderDate=newOrderDate;
+    D.jobs.filter(x=>x.orderNo===j.orderNo).forEach(x=>{x.orderDate=newOrderDate;});
+    const ord=D.orders.find(o=>o.orderNo===j.orderNo);
+    if(ord){ord.orderDate=newOrderDate;ord.dueDate=addDays(newOrderDate,60);}
+  }
+  j.finishDate=fromISO(gv('jf'));
+  j.repair=+gv('jr2')||0;
+  j.received=+gv('jrc')||0;
+  j.balance=j.qty-(+gv('jrc')||0);
+  j.factory=gv('jfac');
+  j.repairSentDate=fromISO(gv('jrsd'));
+  j.repairReason=gv('jrr');
+  // auto-create/update a Repair Job when repair qty > 0
+  syncRepairForJob(j);
+  save();closeModal();renderAll();toast('Job updated');
+}
+// Keep Repair Jobs in sync with Job Master repair entries
+function syncRepairForJob(j){
+  const existing=D.repairs.find(r=>r.itemKey===j.itemKey&&r.auto);
+  if(j.repair>0){
+    if(existing){
+      existing.sentDate=j.repairSentDate||existing.sentDate;
+      existing.qty=j.repair;
+      existing.repairReason=j.repairReason||existing.repairReason;
+      existing.factory=j.factory;
+    }else{
+      D.repairs.push({
+        sentDate:j.repairSentDate||'',refJob:'',itemKey:j.itemKey,orderNo:j.orderNo,
+        type:j.itemType,article:j.article,size:j.size,qty:j.repair,factory:j.factory,
+        repairStatus:'PENDING',repairReason:j.repairReason||'CROOK',receivedDate:'',auto:true
+      });
+    }
+  }else if(existing&&!existing.receivedDate){
+    // repair qty cleared and not yet received → remove auto entry
+    D.repairs=D.repairs.filter(r=>r!==existing);
+  }
+}
+
+function openAddOrder(){
+  openModal(`<h3>Add new order</h3>
+    <div class="fr"><div class="fg"><label class="fl">Order no</label><input id="no1" placeholder="JD00-000132"></div><div class="fg"><label class="fl">Order date</label><input type="date" lang="en" id="no2"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Due date</label><input type="date" lang="en" id="no3"></div><div class="fg"><label class="fl">Total qty</label><input type="number" id="no4" value="1"></div></div>
+    <div class="fr"><div class="fg"><label class="fl">Factory</label><input id="no5" value="PKL"></div><div class="fg"><label class="fl">Zone</label><select id="no6"><option value="GREEN">Green</option><option value="YELLOW">Yellow</option><option value="RED">Red</option></select></div></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btnp" onclick="saveNewOrder()">Add</button></div>`);
+}
+function saveNewOrder(){const qty=+gv('no4')||1;D.orders.push({orderDate:fromISO(gv('no2')),orderNo:gv('no1'),progress:'',dueDate:fromISO(gv('no3')),qty,daysElapsed:0,zone:gv('no6'),finished:0,balance:qty,factory:gv('no5'),finishDate:''});save();closeModal();renderAll();toast('Order added');}
+
+function openAddRepair(){
+  const jobOpts=D.jobs.map((j,i)=>`<option value="${i}">${j.orderNo} — ${j.itemType} ${j.article}${j.size?' sz '+j.size:''}</option>`).join('');
+  openModal(`<h3>Log repair job</h3>
+    <div class="fg"><label class="fl">Select job item (pulls data from Job Master)</label>
+      <select id="rp-job"><option value="">— Select job item —</option>${jobOpts}</select></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Sent date</label><input type="date" lang="en" id="rp1"></div>
+      <div class="fg"><label class="fl">Ref. job</label><input id="rp-ref" placeholder="Ref..."></div>
+    </div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Repair reason</label><select id="rp8">${REPAIR_REASONS.map(rs=>`<option>${rs}</option>`).join('')}</select></div>
+      <div class="fg"><label class="fl">Qty</label><input type="number" id="rp6" value="1"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="closeModal()">Cancel</button><button class="btn btnp" onclick="saveRepair()">Log</button></div>`);
+}
+function saveRepair(){
+  const ji=gv('rp-job');
+  if(ji===''){toast('Please select a job item');return;}
+  const j=D.jobs[+ji];
+  D.repairs.push({sentDate:fromISO(gv('rp1')),refJob:gv('rp-ref'),itemKey:j.itemKey,orderNo:j.orderNo,type:j.itemType,article:j.article,size:j.size,qty:+gv('rp6')||1,factory:j.factory,repairStatus:'PENDING',repairReason:gv('rp8'),receivedDate:''});
+  save();closeModal();renderRepairs();toast('Repair logged');
+}
+
+// USER GUIDE — show only the selected section
+function guideShow(key){
+  ['flow','dashboard','pool','jobs','stoneorder','stonepurchase','repair','tips'].forEach(k=>{
+    const sec=g('g-'+k); if(sec) sec.style.display = (k===key)?'':'none';
+    const btn=g('gb-'+k); if(btn) btn.classList.toggle('active',k===key);
+  });
+}
+
+// Helpers added for order date + due date computation
+function addDays(dateStr, days){
+  try{
+    if(!dateStr) return '';
+    const s=String(dateStr).trim();
+    if(!s) return '';
+    const parts=s.split('/');
+    if(parts.length!==3) return '';
+    const day=parseInt(parts[0],10), mo=parseInt(parts[1],10), yr=parseInt(parts[2],10);
+    if(isNaN(day)||isNaN(mo)||isNaN(yr)) return '';
+    const d=new Date(yr, mo-1, day);
+    if(isNaN(d.getTime())) return '';
+    d.setDate(d.getDate()+(days||0));
+    return d.getDate()+'/'+(d.getMonth()+1)+'/'+d.getFullYear();
+  }catch(e){return '';}
+}
+
+function updateJobOrderDate(i, isoDate){
+  const r = D.jobs[i];
+  if(!r) return;
+  const newDate = fromISO(isoDate);
+  r.orderDate = newDate;
+  // Sync to all jobs with same orderNo
+  D.jobs.filter(j=>j.orderNo===r.orderNo).forEach(j=>{j.orderDate=newDate;});
+  // Update order header — order date and recompute due date
+  const ord = D.orders.find(o=>o.orderNo===r.orderNo);
+  if(ord){
+    ord.orderDate = newDate;
+    ord.dueDate = addDays(newDate, 60);
+  }
+  save();
+  renderAll();
+  toast('Order date updated · due date set to '+(addDays(newDate,60)||'—'));
+}
+
+// RENDER ALL — wrapped in safeCall so one failure cannot cascade
+function renderAll(){
+  const safeCall=(name,fn)=>{try{fn();}catch(e){console.error('Error in '+name+':',e);}};
+  safeCall('hydrateJobStoneFields',hydrateJobStoneFields);
+  safeCall('populateJobTypeFilter',populateJobTypeFilter);
+  safeCall('renderDashboard',renderDashboard);
+  safeCall('renderOrders',renderOrders);
+  safeCall('renderJobs',renderJobs);
+  safeCall('renderPool',renderPool);
+  safeCall('renderStoneOrders',renderStoneOrders);
+  safeCall('renderStonePurchase',renderStonePurchase);
+  safeCall('renderRepairs',renderRepairs);
+}
+
+loadData();
+// One-time sync: ensure jobs with repair>0 appear in Repair Jobs
+D.jobs.forEach(j=>{if(j.repair>0)syncRepairForJob(j);});
+save();
+populateJobTypeFilter();
+populateSpSupplierFilter();
+renderAll();
+
+
+// ===== MODULE VISIBILITY SETTINGS =====
+const MOD_SK="jeweltrack_module_visibility_v1";
+let MODULES={dashboard:true,job:true,stone:true,production:true};
+function loadModuleSettings(){try{MODULES={...MODULES,...JSON.parse(localStorage.getItem(MOD_SK)||"{}")} }catch(e){};["dashboard","job","stone","production"].forEach(k=>{const el=g("mod-"+k);if(el)el.checked=MODULES[k];});applyModuleVisibility();}
+function saveModuleSettings(){["dashboard","job","stone","production"].forEach(k=>{const el=g("mod-"+k);if(el)MODULES[k]=el.checked;});localStorage.setItem(MOD_SK,JSON.stringify(MODULES));applyModuleVisibility();toast("Module settings saved");}
+function setNavVisible(pageList, visible){pageList.forEach(p=>document.querySelectorAll(`[data-page="${p}"]`).forEach(el=>el.style.display=visible?"":"none"));}
+function applyModuleVisibility(){setNavVisible(["dashboard"],MODULES.dashboard);setNavVisible(["jobs","repair"],MODULES.job);setNavVisible(["stone_order","stone_purchase"],MODULES.stone);setNavVisible(["prod_overview","prod_master","prod_casting","prod_filling","prod_setting","prod_polish","prod_goldloss"],MODULES.production);document.querySelectorAll("[data-module-group=production]").forEach(el=>el.style.display=MODULES.production?"":"none");const active=document.querySelector(".page.active");if(active){const p=active.id.replace("page-","");const hidden=(!MODULES.dashboard&&p==="dashboard")||(!MODULES.job&&["jobs","repair"].includes(p))||(!MODULES.stone&&["stone_order","stone_purchase"].includes(p))||(!MODULES.production&&p.startsWith("prod_"));if(hidden)navTo("pool");}}
+
+
+// ===== PRODUCTION MODULE (merged from production.html) =====
+
+// ============ DATA ============
+
+// PD.casting: items assigned to a casting run (have castDate, maybe receivedDate)
+// PD.filling: items cast + received, moved to filling stage
+// PD.setting: items filled + received, moved to setting (stone-setting) stage
+let PD={casting:[],filling:[],setting:[],polish:[]};
+let PWORKERS=[];
+const PSK='jeweltrack_production_v2';
+function P_loadData(){
+  try{const s=localStorage.getItem(PSK);if(s){const p=JSON.parse(s);PD={casting:p.casting||[],filling:p.filling||[],setting:p.setting||[],polish:p.polish||[]};PWORKERS=p.workers||[];}}catch(e){PD={casting:[],filling:[],setting:[],polish:[]};PWORKERS=[];}
+}
+function P_save(){localStorage.setItem(PSK,JSON.stringify({...PD,workers:PWORKERS}));}
+function P_g(id){return document.getElementById('prod-'+id)||document.getElementById(id);}
+function P_gv(id){const el=P_g(id);return el?el.value:'';}
+function P_sh(id,h){const el=P_g(id);if(el)el.innerHTML=h;}
+function P_toast(m){const e=P_g('toast');e.textContent=m;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),2500);}
+function P_openModal(html){P_sh('modal-content',html);P_g('mbg').classList.add('open');}
+function P_closeModal(){P_g('mbg').classList.remove('open');}
+P_g('mbg').addEventListener('click',e=>{if(e.target.id==='mbg')P_closeModal();});
+
+// DATE HELPERS
+function P_toISO(d){if(!d)return'';const p=d.split('/');if(p.length===3)return`${p[2]}-${p[1].padStart(2,'0')}-${p[0].padStart(2,'0')}`;return d;}
+function P_fromISO(d){if(!d)return'';const p=d.split('-');if(p.length===3)return`${p[2]}/${p[1]}/${p[0]}`;return d;}
+
+// ============ NAV ============
+function P_navTo(page){const map={master:'prod_casting',filling:'prod_filling',setting:'prod_setting'}; navTo(map[page]||('prod_'+page));}
+
+
+// ============ IMPORT (header-matching parser, shared with Module 1) ============
+function P_importPoolData(){
+  // Read from Job Master (D.jobs) — one casting item per job item
+  const src = D.jobs || [];
+  if(!src.length){P_toast('Job Master is empty — import data in Order Pool first');return;}
+  const known = new Set([...PD.casting,...PD.filling,...PD.setting].map(x=>x.itemKey));
+  let added=0, skipped=0;
+  src.forEach(j=>{
+    if(known.has(j.itemKey)){skipped++;return;}
+    known.add(j.itemKey);
+    // Find matching pool row for metal weight data
+    const poolRow = (D.pool||[]).find(p=>p.itemKey===j.itemKey) || {};
+    PD.casting.push({
+      itemKey: j.itemKey,
+      orderNo: j.orderNo,
+      type: j.itemType,
+      article: j.article,
+      metal: j.metal,
+      size: j.size,
+      qty: j.qty,
+      totalWt: poolRow.totalWt || '',
+      wtPurity: poolRow.wtPurity || '',
+      stoneType: j.stoneType || poolRow.stoneType || '',
+      stoneDia: j.stoneDia || poolRow.stoneDia || '',
+      totalStones: poolRow.totalStones || '',
+      castDate: '',
+      receivedDate: '',
+      receivedWeight: '',
+      importedAt: new Date().toISOString()
+    });
+    added++;
+  });
+  P_save(); P_renderAll();
+  let msg = added+' item(s) loaded from Job Master into Casting Master';
+  if(skipped>0) msg+=' · '+skipped+' already in system (skipped)';
+  P_toast(msg);
+}
+
+function P_buildItemKey(r){
+  // Item Key: ORDER NO + ARTICLE + METAL + SIZE + QTY + STONE TYPE + STONE DIA
+  const parts=[
+    r.orderNo||'', r.article||'', r.metal||'',
+    r.size||'', r.qty||'', r.stoneType||'', r.stoneDia||''
+  ].map(x=>(x+'').trim()).filter(Boolean);
+  return parts.join('-');
+}
+
+// ============ CASTING POOL ============
+
+
+
+
+
+
+// ============ CASTING MASTER ============
+function P_num(x){const n=parseFloat(x);return isNaN(n)?0:n;}
+function P_renderCastMaster(){
+  const q=(P_gv('cm-search')||'').toLowerCase();
+  const qo=(P_gv('cm-search-order')||'').toLowerCase();
+  const qc=(P_gv('cm-search-cast')||'').toLowerCase();
+  const data=[...PD.casting].sort((a,b)=>P_toISO(a.castDate).localeCompare(P_toISO(b.castDate)));
+  const f=data.filter(r=>{
+    if(qo&&!((r.orderNo||'').toLowerCase().includes(qo)))return false;
+    if(q&&!((r.article+r.type).toLowerCase().includes(q)))return false;
+    if(qc&&!((r.castDate||'').toLowerCase().includes(qc)))return false;
+    return true;
+  });
+  P_g('cm-count').textContent=PD.casting.length;
+
+  // metrics
+  const totalItems=PD.casting.length;
+  const totalWt=PD.casting.reduce((s,r)=>s+P_num(r.totalWt)*(P_num(r.qty)||1),0);
+  const pendingReceive=PD.casting.filter(r=>!r.receivedDate).length;
+  P_sh('cm-metrics',`
+    <div class="metric"><div class="ml">Casting items</div><div class="mv">${totalItems}</div></div>
+    <div class="metric"><div class="ml">Total metal (g)</div><div class="mv">${totalWt.toFixed(2)}</div></div>
+    <div class="metric"><div class="ml">Awaiting receive</div><div class="mv yel">${pendingReceive}</div></div>`);
+
+  // metal summary (group by metal)
+  P_renderMetalSummary();
+
+  if(!f.length){P_sh('cm-body','<tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--tx3)">No casting items yet</td></tr>');return;}
+  P_sh('cm-body',f.map(r=>{
+    const i=PD.casting.indexOf(r);
+    const alloy=(P_num(r.totalWt)-P_num(r.wtPurity));
+    return`<tr>
+      <td><input type="checkbox" class="cm-cb" value="${i}"></td>
+      <td>${r.castDate||'—'}</td>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.type||''}</span></td>
+      <td>${r.article||''}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
+      <td>${r.totalWt||''}</td>
+      <td>${r.wtPurity||''}</td>
+      <td>${alloy>0?alloy.toFixed(2):'—'}</td>
+      <td>${r.size||'—'}</td>
+      <td>${r.qty||''}</td>
+      <td><input type="number" step="0.01" style="width:75px" value="${r.receivedWeight||''}" placeholder="g" onchange="P_setReceivedWeight(${i},this.value)"></td>
+      <td><input type="date" lang="en" value="${P_toISO(r.receivedDate)}" onchange="P_setReceived(${i},P_fromISO(this.value))"></td>
+    </tr>`;
+  }).join(''));
+}
+function P_renderMetalSummary(){
+  if(!PD.casting.length){P_sh('cm-metal-summary','<p style="color:var(--tx3);font-size:12.5px">No casting items yet.</p>');return;}
+  // group by metal
+  const groups={};
+  PD.casting.forEach(r=>{
+    const m=r.metal||'(unspecified)';
+    if(!groups[m])groups[m]={totalWt:0,wtPurity:0,count:0};
+    const q=P_num(r.qty)||1;
+    groups[m].totalWt+=P_num(r.totalWt)*q;
+    groups[m].wtPurity+=P_num(r.wtPurity)*q;
+    groups[m].count+=1;
+  });
+  // lot limit: gold ~400g, silver ~300g per lot (tree)
+  function P_lotLimit(metal){
+    const m=(metal||'').toLowerCase();
+    if(m.includes('gold')||m.includes('ทอง')) return 400;
+    if(m.includes('silver')||m.includes('925')||m.includes('เงิน')) return 300;
+    return null;
+  }
+  let html='<div class="tw"><table><thead><tr><th>Metal</th><th>Items</th><th>Total wt (g)</th><th>Pure (g)</th><th>Alloy (g)</th><th>Est. lots (tree)</th></tr></thead><tbody>';
+  let grandTotal=0,grandPure=0,grandAlloy=0;
+  Object.keys(groups).sort().forEach(m=>{
+    const gp=groups[m];
+    const alloy=gp.totalWt-gp.wtPurity;
+    grandTotal+=gp.totalWt;grandPure+=gp.wtPurity;grandAlloy+=alloy;
+    const lim=P_lotLimit(m);
+    const lots=lim?Math.ceil(gp.totalWt/lim):null;
+    const lotTxt=lim?`${lots} tree (≤${lim}g/tree)`:'—';
+    html+=`<tr><td><strong>${m}</strong></td><td>${gp.count}</td><td>${gp.totalWt.toFixed(2)}</td><td>${gp.wtPurity.toFixed(2)}</td><td>${alloy.toFixed(2)}</td><td>${lotTxt}</td></tr>`;
+  });
+  html+=`<tr style="border-top:2px solid var(--bd2)"><td><strong>TOTAL</strong></td><td></td><td><strong>${grandTotal.toFixed(2)}</strong></td><td><strong>${grandPure.toFixed(2)}</strong></td><td><strong>${grandAlloy.toFixed(2)}</strong></td><td></td></tr>`;
+  html+='</tbody></table></div>';
+  // total lot warning
+  const totalLots=Object.keys(groups).reduce((s,m)=>{const lim=P_lotLimit(m);return s+(lim?Math.ceil(groups[m].totalWt/lim):0);},0);
+  if(totalLots>6){
+    html+=`<div style="margin-top:.75rem"><span class="warn"><i class="ti ti-alert-triangle"></i> Estimated ${totalLots} lots (tree) total — exceeds the 6-lot guideline per casting run. Consider splitting into multiple runs.</span></div>`;
+  }else if(totalLots>0){
+    html+=`<div style="margin-top:.75rem;font-size:11.5px;color:var(--tx2)">Estimated ${totalLots} lot(s) total — within the 6-lot guideline. You decide how to split the actual trees.</div>`;
+  }
+  P_sh('cm-metal-summary',html);
+}
+function P_setReceived(i,val){PD.casting[i].receivedDate=val;P_save();}
+function P_setReceivedWeight(i,val){PD.casting[i].receivedWeight=val;P_save();}
+function P_toggleCmAll(cb){document.querySelectorAll('.cm-cb').forEach(c=>c.checked=cb.checked);}
+function P_receiveSelected(){
+  const idx=[...document.querySelectorAll('.cm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to move');return;}
+  // only move those that have a received date
+  const noDate=idx.filter(i=>!PD.casting[i].receivedDate);
+  if(noDate.length){P_toast(noDate.length+' selected item(s) have no received date — set it first');return;}
+  idx.sort((a,b)=>b-a).forEach(i=>{
+    const item=PD.casting[i];
+    // filling start weight = received (post-cast) weight; fall back to total wt if not entered
+    item.fillingWt=item.receivedWeight||item.totalWt||'';
+    item.worker='';item.sentDate='';
+    PD.filling.push(item);
+    PD.casting.splice(i,1);
+  });
+  P_save();P_renderAll();
+  P_toast(idx.length+' item(s) moved to Filling Master');
+}
+
+// ============ FILLING MASTER ============
+// Diff = returned weight − allowed return, where allowed return = sent wt × (1 − loss%/100)
+//   diff < 0 → technician owes metal;  diff > 0 → company owes technician
+function P_fillingSentWt(r){return P_num(r.fillingWt||r.receivedWeight||r.totalWt||0);}
+function P_fillingDiff(r){
+  if(r.returnWt===''||r.returnWt==null) return null;
+  const sent=P_fillingSentWt(r);
+  const allowed=sent*(1-(P_num(r.lossPct)/100));
+  return P_num(r.returnWt)-allowed;
+}
+function P_renderFilling(){
+  const q=(P_gv('fm-search')||'').toLowerCase();
+  const qw=(P_gv('fm-search-worker')||'').toLowerCase();
+  const st=P_gv('fm-status-f');
+  const data=[...PD.filling].sort((a,b)=>P_toISO(a.receivedDate).localeCompare(P_toISO(b.receivedDate)));
+  const f=data.filter(r=>{
+    if(!(r.orderNo+r.article+r.type).toLowerCase().includes(q))return false;
+    if(!(r.worker||'').toLowerCase().includes(qw))return false;
+    if(st==='unassigned'&&r.worker)return false;
+    if(st==='out'&&(!r.worker||r.returnDate))return false;
+    if(st==='returned'&&!r.returnDate)return false;
+    return true;
+  });
+  P_g('fm-count').textContent=PD.filling.length;
+  if(!f.length){P_sh('fm-body','<tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--tx3)">No items — receive cast items in Casting Master, or adjust filters</td></tr>');return;}
+  P_sh('fm-body',f.map(r=>{
+    const i=PD.filling.indexOf(r);
+    const sent=P_fillingSentWt(r);
+    const diff=P_fillingDiff(r);
+    let diffCell='<span style="color:var(--tx3)">—</span>';
+    if(diff!=null){
+      const v=diff.toFixed(2);
+      if(diff<-0.0001) diffCell=`<span class="badge br" title="Goldsmith owes metal">${v}</span>`;
+      else if(diff>0.0001) diffCell=`<span class="badge bg" title="Company owes goldsmith">+${v}</span>`;
+      else diffCell=`<span class="badge bgr">0.00</span>`;
+    }
+    return`<tr>
+    <td><input type="checkbox" class="fm-cb" value="${i}"></td>
+    <td><strong>${r.orderNo}</strong></td>
+    <td><span class="tag">${r.type||''}</span></td>
+    <td>${r.article||''}</td>
+    <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
+    <td>${sent?sent.toFixed(2):''}</td>
+    <td>${r.qty||''}</td>
+    <td>${r.worker?`<span class="badge bb">${r.worker}</span>`:'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${r.sentDate||'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${r.returnDate||'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${(r.returnWt===''||r.returnWt==null)?'<span style="color:var(--tx3)">—</span>':P_num(r.returnWt).toFixed(2)}</td>
+    <td>${(r.lossPct===''||r.lossPct==null)?'<span style="color:var(--tx3)">—</span>':r.lossPct+'%'}</td>
+    <td>${diffCell}</td>
+  </tr>`;}).join(''));
+}
+function P_toggleFmAll(cb){document.querySelectorAll('.fm-cb').forEach(c=>c.checked=cb.checked);}
+
+// PWORKERS (technicians) — persisted list
+function P_openAssignSelected(){
+  const idx=[...document.querySelectorAll('.fm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to assign first');return;}
+  if(!PWORKERS.length){P_toast('Add a technician first (Manage technicians)');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const opts=PWORKERS.map(w=>`<option value="${w}">${w}</option>`).join('');
+  P_openModal(`<h3>Assign to goldsmith</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected. Choose the goldsmith and the date the work is handed out.</p>
+    <div class="fg"><label class="fl">Goldsmith</label><select id="assign-worker">${opts}<option value="__add__">+ Add technician…</option></select></div>
+    <div class="fg"><label class="fl">Sent date (work handed out)</label><input type="date" lang="en" id="assign-date" value="${today}"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="P_closeModal()">Cancel</button><button class="btn btnp" onclick="P_confirmAssign([${idx.join(',')}])">Save</button></div>`);
+  // handle add-new inside the select
+  P_g('assign-worker').addEventListener('change',function(){
+    if(this.value==='__add__'){const n=prompt('New goldsmith name:');if(n){PWORKERS.push(n);P_save();this.innerHTML=PWORKERS.map(w=>`<option value="${w}"${w===n?' selected':''}>${w}</option>`).join('')+'<option value="__add__">+ Add technician…</option>';}else{this.value=PWORKERS[0]||'';}}
+  });
+}
+function P_confirmAssign(idx){
+  const w=P_gv('assign-worker');
+  const d=P_fromISO(P_gv('assign-date'));
+  if(!w||w==='__add__'){P_toast('Choose a goldsmith');return;}
+  if(!d){P_toast('Choose a sent date');return;}
+  idx.forEach(i=>{PD.filling[i].worker=w;PD.filling[i].sentDate=d;});
+  P_save();P_closeModal();P_renderFilling();
+  P_toast(idx.length+' item(s) assigned to '+w);
+}
+// Receive finished work back from technician — record return date, return weight, allowed loss%
+function P_openReceiveSelected(){
+  const idx=[...document.querySelectorAll('.fm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to receive first');return;}
+  // only items already out with a technician can be received back
+  const notOut=idx.filter(i=>!PD.filling[i].worker);
+  if(notOut.length){P_toast(notOut.length+' selected item(s) are not assigned to a technician yet');return;}
+  const today=new Date().toISOString().slice(0,10);
+  // pre-fill loss% from the first selected item if it already has one
+  const presetLoss=PD.filling[idx[0]].lossPct||'';
+  // show what is being received
+  const sentTotal=idx.reduce((s,i)=>s+P_fillingSentWt(PD.filling[i]),0);
+  P_openModal(`<h3>Receive from goldsmith</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected · total sent weight <strong>${sentTotal.toFixed(2)} g</strong>. Enter the date the work returned, the weight returned, and the allowed loss%.</p>
+    <div class="fg"><label class="fl">Return date</label><input type="date" lang="en" id="recv-date" value="${today}"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Return weight (g)${idx.length>1?' — total':''}</label><input type="number" step="0.001" id="recv-wt" placeholder="g"></div>
+      <div class="fg"><label class="fl">Allowed loss %</label><input type="number" step="0.01" id="recv-loss" value="${presetLoss}" placeholder="e.g. 5"></div>
+    </div>
+    <div id="recv-preview" style="font-size:12px;color:var(--tx2);margin-bottom:1rem"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.5rem"><button class="btn" onclick="P_closeModal()">Cancel</button><button class="btn btnp" onclick="P_confirmReceive([${idx.join(',')}],${sentTotal})">Save</button></div>`);
+  // live preview of the diff
+  const upd=()=>{
+    const rw=P_num(P_gv('recv-wt')),lp=P_num(P_gv('recv-loss'));
+    if(!P_gv('recv-wt')){P_g('recv-preview').innerHTML='';return;}
+    const allowed=sentTotal*(1-lp/100);
+    const diff=rw-allowed;
+    let msg;
+    if(diff<-0.0001) msg=`<span class="badge br">Short ${Math.abs(diff).toFixed(2)} g</span> — technician owes metal`;
+    else if(diff>0.0001) msg=`<span class="badge bg">Over +${diff.toFixed(2)} g</span> — company owes technician`;
+    else msg=`<span class="badge bgr">Exact</span> — within allowance`;
+    P_g('recv-preview').innerHTML=`Allowed return: <strong>${allowed.toFixed(2)} g</strong> &nbsp; ${msg}`;
+  };
+  P_g('recv-wt').addEventListener('input',upd);
+  P_g('recv-loss').addEventListener('input',upd);
+}
+function P_confirmReceive(idx,sentTotal){
+  const d=P_fromISO(P_gv('recv-date'));
+  const rwStr=P_gv('recv-wt');
+  const lp=P_gv('recv-loss');
+  if(!d){P_toast('Choose a return date');return;}
+  if(rwStr===''){P_toast('Enter the return weight');return;}
+  const totalReturn=P_num(rwStr);
+  // distribute the returned weight across selected items in proportion to their sent weight,
+  // so each row keeps a sensible per-item return weight (diff still sums correctly)
+  idx.forEach(i=>{
+    const r=PD.filling[i];
+    const share=sentTotal>0?P_fillingSentWt(r)/sentTotal:1/idx.length;
+    r.returnDate=d;
+    r.returnWt=+(totalReturn*share).toFixed(3);
+    r.lossPct=lp;
+  });
+  P_save();P_closeModal();P_renderFilling();
+  P_toast(idx.length+' item(s) received');
+}
+// ============ MOVE FILLING → SETTING ============
+function P_moveToSetting(){
+  const idx=[...document.querySelectorAll('.fm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to move');return;}
+  // only items returned from the filling technician can move on
+  const notReturned=idx.filter(i=>!PD.filling[i].returnDate);
+  if(notReturned.length){P_toast(notReturned.length+' selected item(s) not yet returned from filling — receive them first');return;}
+  idx.sort((a,b)=>b-a).forEach(i=>{
+    const item=PD.filling[i];
+    // metal start weight for setting = filling return weight
+    item.settingMetalWt=(item.returnWt===''||item.returnWt==null)?P_fillingSentWt(item):P_num(item.returnWt);
+    // reset setting-stage fields
+    item.setWorker='';item.setSentDate='';item.setReturnDate='';item.setReturnWt='';item.setStoneCt='';item.setLossPct='';
+    PD.setting.push(item);
+    PD.filling.splice(i,1);
+  });
+  P_save();P_renderAll();P_navTo('setting');
+  P_toast(idx.length+' item(s) moved to Setting Master');
+}
+
+// ============ SETTING MASTER ============
+// metal start weight at setting
+function P_settingMetalWt(r){return P_num(r.settingMetalWt||r.returnWt||P_fillingSentWt(r));}
+// stone weight in grams from carat (carat / 5 = grams)
+function P_stoneGrams(r){return P_num(r.setStoneCt)/5;}
+// metal diff: (returned total − set-stone grams) − allowed metal
+// allowed metal = metal start × (1 − lossPct/100)
+function P_settingDiff(r){
+  if(r.setReturnWt===''||r.setReturnWt==null) return null;
+  const metalReturned=P_num(r.setReturnWt)-P_stoneGrams(r);
+  const allowed=P_settingMetalWt(r)*(1-(P_num(r.setLossPct)/100));
+  return metalReturned-allowed;
+}
+
+// ── Aggregate ALL stones for an item ──
+// SOURCE OF TRUTH: Order Pool (D.pool) — parent row + sub-rows for same (orderNo+article)
+//   Parent row: has qty (the job item itself)
+//   Sub-rows  : no qty, just additional stone types for the same article
+// Fallback to Stone Orders (D.stoneOrders) if pool is empty (e.g., legacy data)
+function getStonesForItem(orderNo, article, itemKey){
+  const empty={types:[],dias:[],counts:[],totalCount:0,typesStr:'',diasStr:'',countStr:'',raw:[]};
+  if(!orderNo||!article) return empty;
+  const key=(itemKey||'').trim();
+
+  // Primary source: Order Pool rows linked by parentItemKey.
+  // This is the critical fix for repeated articles with different sizes.
+  let poolMatches=[];
+  if(key){
+    poolMatches=(D.pool||[]).filter(p=>(p.parentItemKey===key || (rowHasItemQty(p)&&p.itemKey===key)) && p.stoneType);
+  }
+  // Legacy fallback only when itemKey is not available.
+  if(!poolMatches.length && !key){
+    poolMatches=(D.pool||[]).filter(p=>p.orderNo===orderNo && p.article===article && p.stoneType);
+  }
+
+  if(poolMatches.length){
+    const types  = poolMatches.map(p=>p.stoneType||'').filter(Boolean);
+    const dias   = poolMatches.map(p=>p.stoneDia||'').filter(Boolean);
+    const counts = poolMatches.map(p=>parseInt(p.totalStones)||parseInt(p.stoneQtyPer)||0);
+    const totalCount = counts.reduce((a,b)=>a+b,0);
+    const typesStr = types.length>1
+      ? poolMatches.map(p=>`${p.stoneType||''}<span style="color:var(--tx3)"> (${parseInt(p.totalStones)||parseInt(p.stoneQtyPer)||0})</span>`).join('<br>')
+      : (types[0]||'—');
+    const diasStr  = dias.length>1 ? dias.join('<br>') : (dias[0]||'—');
+    const countStr = totalCount>0 ? String(totalCount) : '—';
+    return {types,dias,counts,totalCount,typesStr,diasStr,countStr,raw:poolMatches};
+  }
+
+  // Fallback: Stone Orders linked by itemKey. Use article-wide matching only for old data.
+  let soMatches=[];
+  if(key){
+    soMatches=(D.stoneOrders||[]).filter(s=>s.itemKey===key);
+  }
+  if(!soMatches.length && !key){
+    soMatches=(D.stoneOrders||[]).filter(s=>s.orderNo===orderNo && s.article===article);
+  }
+  if(!soMatches.length){
+    const j=(D.jobs||[]).find(x=>x.itemKey===key) || {};
+    const inferred=inferStoneFromItemKey(j);
+    if(inferred.stoneType){
+      return {types:[inferred.stoneType],dias:inferred.stoneDia?[inferred.stoneDia]:[],counts:[],totalCount:0,typesStr:inferred.stoneType,diasStr:inferred.stoneDia||'—',countStr:inferred.totalStones||'—',raw:[]};
+    }
+    return empty;
+  }
+  const types  = soMatches.map(s=>s.stoneType||'').filter(Boolean);
+  const dias   = soMatches.map(s=>s.stoneDia||s.stoneSize||'').filter(Boolean);
+  const counts = soMatches.map(s=>+s.totalQty||0);
+  const totalCount = counts.reduce((a,b)=>a+b,0);
+  const typesStr = types.length>1
+    ? soMatches.map(s=>`${s.stoneType||''}<span style="color:var(--tx3)"> (${+s.totalQty||0})</span>`).join('<br>')
+    : (types[0]||'—');
+  const diasStr  = dias.length>1 ? dias.join('<br>') : (dias[0]||'—');
+  const countStr = totalCount>0 ? String(totalCount) : '—';
+  return {types,dias,counts,totalCount,typesStr,diasStr,countStr,raw:soMatches};
+}
+
+function P_renderSetting(){
+  const q=(P_gv('sm-search')||'').toLowerCase();
+  const qw=(P_gv('sm-search-worker')||'').toLowerCase();
+  const st=P_gv('sm-status-f');
+  const data=[...PD.setting];
+  const f=data.filter(r=>{
+    if(!(r.orderNo+r.article+r.type).toLowerCase().includes(q))return false;
+    if(!(r.setWorker||'').toLowerCase().includes(qw))return false;
+    if(st==='unassigned'&&r.setWorker)return false;
+    if(st==='out'&&(!r.setWorker||r.setReturnDate))return false;
+    if(st==='returned'&&!r.setReturnDate)return false;
+    return true;
+  });
+  P_g('sm-count').textContent=PD.setting.length;
+  if(!f.length){P_sh('sm-body','<tr><td colspan="17" style="text-align:center;padding:2rem;color:var(--tx3)">No items — move returned items from Filling Master, or adjust filters</td></tr>');return;}
+  P_sh('sm-body',f.map(r=>{
+    const i=PD.setting.indexOf(r);
+    const mwt=P_settingMetalWt(r);
+    const diff=P_settingDiff(r);
+    let diffCell='<span style="color:var(--tx3)">—</span>';
+    if(diff!=null){
+      const v=diff.toFixed(2);
+      if(diff<-0.0001) diffCell=`<span class="badge br" title="Technician owes metal">${v}</span>`;
+      else if(diff>0.0001) diffCell=`<span class="badge bg" title="Company owes technician">+${v}</span>`;
+      else diffCell=`<span class="badge bgr">0.00</span>`;
+    }
+    const stones=getStonesForItem(r.orderNo, r.article, r.itemKey);
+    return`<tr>
+    <td><input type="checkbox" class="sm-cb" value="${i}"></td>
+    <td><strong>${r.orderNo}</strong></td>
+    <td><span class="tag">${r.type||''}</span></td>
+    <td>${r.article||''}</td>
+    <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
+    <td>${mwt?mwt.toFixed(2):''}</td>
+    <td>${r.qty||''}</td>
+    <td style="font-size:12px;line-height:1.5">${stones.typesStr||r.stoneType||'—'}</td>
+    <td style="font-size:12px;line-height:1.5">${stones.diasStr||r.stoneDia||'—'}</td>
+    <td>${stones.countStr||r.totalStones||'—'}</td>
+    <td>${r.setWorker?`<span class="badge bb">${r.setWorker}</span>`:'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${r.setSentDate||'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${r.setReturnDate||'<span style="color:var(--tx3)">—</span>'}</td>
+    <td>${(r.setReturnWt===''||r.setReturnWt==null)?'<span style="color:var(--tx3)">—</span>':P_num(r.setReturnWt).toFixed(2)}</td>
+    <td>${(r.setStoneCt===''||r.setStoneCt==null)?'<span style="color:var(--tx3)">—</span>':P_num(r.setStoneCt).toFixed(2)}</td>
+    <td>${(r.setLossPct===''||r.setLossPct==null)?'<span style="color:var(--tx3)">—</span>':r.setLossPct+'%'}</td>
+    <td>${diffCell}</td>
+  </tr>`;}).join(''));
+}
+function P_toggleSmAll(cb){document.querySelectorAll('.sm-cb').forEach(c=>c.checked=cb.checked);}
+
+function P_openSetAssign(){
+  const idx=[...document.querySelectorAll('.sm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to assign first');return;}
+  if(!PWORKERS.length){P_toast('Add a technician first (Manage technicians)');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const opts=PWORKERS.map(w=>`<option value="${w}">${w}</option>`).join('');
+  // Render ONE ROW PER STONE TYPE per item, so each stone type has its own carat input
+  // Item info (order/article) uses rowspan when an item has multiple stones
+  const itemRows=idx.map(i=>{
+    const r=PD.setting[i];
+    const stones=getStonesForItem(r.orderNo,r.article,r.itemKey);
+    // No stones found — render a single row with one input
+    if(!stones.raw||!stones.raw.length){
+      return`<tr>
+        <td style="font-size:11.5px"><strong>${r.orderNo}</strong><br><span style="color:var(--tx3)">${r.article||''}</span></td>
+        <td style="font-size:11.5px">${r.stoneType||'—'}</td>
+        <td style="font-size:11.5px">${r.stoneDia||'—'}</td>
+        <td style="font-size:11.5px;color:var(--tx2)">${r.totalStones||'—'}</td>
+        <td><input type="number" step="0.001" class="set-ct" data-idx="${i}" data-stone="0" value="${(r.setStoneCarats&&r.setStoneCarats[0])||r.setStoneCt||''}" placeholder="carat" style="width:80px"></td>
+      </tr>`;
+    }
+    // Multiple stones — one row per stone type with rowspan on item cell
+    const n=stones.raw.length;
+    return stones.raw.map((stone,si)=>{
+      const count=stones.counts[si]||0;
+      const stType=stone.stoneType||'';
+      const stDia=stone.stoneDia||stone.stoneSize||'—';
+      const caratVal=(r.setStoneCarats&&r.setStoneCarats[si])||'';
+      const firstCol = si===0
+        ? `<td rowspan="${n}" style="font-size:11.5px;vertical-align:top;background:var(--bg2)"><strong>${r.orderNo}</strong><br><span style="color:var(--tx3)">${r.article||''}</span></td>`
+        : '';
+      return`<tr>
+        ${firstCol}
+        <td style="font-size:11.5px">${stType}</td>
+        <td style="font-size:11.5px">${stDia}</td>
+        <td style="font-size:11.5px;color:var(--tx2)">${count||'—'}</td>
+        <td><input type="number" step="0.001" class="set-ct" data-idx="${i}" data-stone="${si}" value="${caratVal}" placeholder="carat" style="width:80px"></td>
+      </tr>`;
+    }).join('');
+  }).join('');
+  P_openModal(`<h3>Assign to technician</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected for stone-setting. Choose the setter, the date the work is handed out, and the stone weight (carat) for EACH stone type.</p>
+    <div class="fg"><label class="fl">Setter</label><select id="set-worker">${opts}<option value="__add__">+ Add technician…</option></select></div>
+    <div class="fg"><label class="fl">Sent date (work handed out)</label><input type="date" lang="en" id="set-date" value="${today}"></div>
+    <div class="fg"><label class="fl">Stone weight given (carat) — one input per stone type</label>
+      <div class="tw" style="max-height:230px;overflow-y:auto;border:1px solid var(--bd);border-radius:var(--r)"><table>
+        <thead><tr><th>Item</th><th>Stone type</th><th>Stone dia</th><th>Stones</th><th>Carat</th></tr></thead>
+        <tbody>${itemRows}</tbody>
+      </table></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="P_closeModal()">Cancel</button><button class="btn btnp" onclick="P_confirmSetAssign([${idx.join(',')}])">Save</button></div>`);
+  P_g('set-worker').addEventListener('change',function(){
+    if(this.value==='__add__'){const n=prompt('New technician name:');if(n){PWORKERS.push(n);P_save();this.innerHTML=PWORKERS.map(w=>`<option value="${w}"${w===n?' selected':''}>${w}</option>`).join('')+'<option value="__add__">+ Add technician…</option>';}else{this.value=PWORKERS[0]||'';}}
+  });
+}
+function P_confirmSetAssign(idx){
+  const w=P_gv('set-worker');
+  const d=P_fromISO(P_gv('set-date'));
+  if(!w||w==='__add__'){P_toast('Choose a setter');return;}
+  if(!d){P_toast('Choose a sent date');return;}
+  // Collect carats per stone-type per item
+  document.querySelectorAll('.set-ct').forEach(inp=>{
+    const i=+inp.dataset.idx;
+    const si=+inp.dataset.stone||0;
+    if(!PD.setting[i].setStoneCarats) PD.setting[i].setStoneCarats=[];
+    PD.setting[i].setStoneCarats[si]=inp.value;
+  });
+  // Compute total carat per item (sum of all stone types)
+  idx.forEach(i=>{
+    const r=PD.setting[i];
+    const carats=r.setStoneCarats||[];
+    const total=carats.reduce((s,c)=>s+(P_num(c)||0),0);
+    r.setStoneCt = total>0 ? total.toFixed(3) : '';
+    r.setWorker=w;
+    r.setSentDate=d;
+  });
+  P_save();P_closeModal();P_renderSetting();
+  P_toast(idx.length+' item(s) assigned to '+w);
+}
+
+// Receive set work back: returned weight = metal + the stones given at assign time
+// metal returned = returned total − stone grams (carat ÷ 5); compared to allowed metal
+function P_openSetReceive(){
+  const idx=[...document.querySelectorAll('.sm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to receive first');return;}
+  const notOut=idx.filter(i=>!PD.setting[i].setWorker);
+  if(notOut.length){P_toast(notOut.length+' selected item(s) are not assigned to a technician yet');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const presetLoss=PD.setting[idx[0]].setLossPct||'';
+  const metalTotal=idx.reduce((s,i)=>s+P_settingMetalWt(PD.setting[i]),0);
+  const ctTotal=idx.reduce((s,i)=>s+P_num(PD.setting[i].setStoneCt),0);
+  const stoneGTotal=ctTotal/5;
+  P_openModal(`<h3>Receive from setter</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected · metal start <strong>${metalTotal.toFixed(2)} g</strong> · stones given <strong>${ctTotal.toFixed(2)} ct</strong> (${stoneGTotal.toFixed(2)} g). Enter the return date, total returned weight (metal + stones), and the allowed loss%.</p>
+    <div class="fg"><label class="fl">Return date</label><input type="date" lang="en" id="sr-date" value="${today}"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Returned weight (g)${idx.length>1?' — total':''}</label><input type="number" step="0.001" id="sr-wt" placeholder="metal + stones"></div>
+      <div class="fg"><label class="fl">Allowed loss %</label><input type="number" step="0.01" id="sr-loss" value="${presetLoss}" placeholder="e.g. 3"></div>
+    </div>
+    <div id="sr-preview" style="font-size:12px;color:var(--tx2);margin-bottom:1rem"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.5rem"><button class="btn" onclick="P_closeModal()">Cancel</button><button class="btn btnp" onclick="P_confirmSetReceive([${idx.join(',')}],${metalTotal},${ctTotal})">Save</button></div>`);
+  const upd=()=>{
+    if(!P_gv('sr-wt')){P_g('sr-preview').innerHTML='';return;}
+    const rw=P_num(P_gv('sr-wt')),lp=P_num(P_gv('sr-loss'));
+    const stoneG=ctTotal/5;
+    const metalReturned=rw-stoneG;
+    const allowed=metalTotal*(1-lp/100);
+    const diff=metalReturned-allowed;
+    let msg;
+    if(diff<-0.0001) msg=`<span class="badge br">Short ${Math.abs(diff).toFixed(2)} g</span> — technician owes metal`;
+    else if(diff>0.0001) msg=`<span class="badge bg">Over +${diff.toFixed(2)} g</span> — company owes technician`;
+    else msg=`<span class="badge bgr">Exact</span> — within allowance`;
+    P_g('sr-preview').innerHTML=`Stones: <strong>${stoneG.toFixed(2)} g</strong> (${ctTotal.toFixed(2)} ct ÷ 5) · Metal returned: <strong>${metalReturned.toFixed(2)} g</strong> · Allowed metal: <strong>${allowed.toFixed(2)} g</strong><br>${msg}`;
+  };
+  ['sr-wt','sr-loss'].forEach(id=>P_g(id).addEventListener('input',upd));
+}
+function P_confirmSetReceive(idx,metalTotal,ctTotal){
+  const d=P_fromISO(P_gv('sr-date'));
+  if(!d){P_toast('Choose a return date');return;}
+  if(P_gv('sr-wt')===''){P_toast('Enter the returned weight');return;}
+  const totalReturn=P_num(P_gv('sr-wt'));
+  const lp=P_gv('sr-loss');
+  idx.forEach(i=>{
+    const r=PD.setting[i];
+    const share=metalTotal>0?P_settingMetalWt(r)/metalTotal:1/idx.length;
+    r.setReturnDate=d;
+    r.setReturnWt=+(totalReturn*share).toFixed(3);
+    r.setLossPct=lp;
+    // setStoneCt was set at assign time — keep it
+  });
+  P_save();P_closeModal();P_renderSetting();
+  P_toast(idx.length+' item(s) received');
+}
+
+function P_manageWorkers(){
+  const current=PWORKERS.length?PWORKERS.map((w,i)=>`${i+1}. ${w}`).join('\n'):'(none yet)';
+  const action=prompt('Technicians:\n'+current+'\n\nType a NEW name to add,\nor type the exact name to REMOVE.\n(Leave blank to cancel)');
+  if(!action)return;
+  const idx=PWORKERS.findIndex(x=>x.toLowerCase()===action.trim().toLowerCase());
+  if(idx>=0){PWORKERS.splice(idx,1);P_toast('Removed: '+action.trim());}
+  else{PWORKERS.push(action.trim());P_toast('Added: '+action.trim());}
+  P_save();
+}
+
+// ============ BACKUP / RESTORE ============
+function P_backupData(){
+  const blob=new Blob([JSON.stringify(PD,null,2)],{type:'application/json'});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement('a');
+  const today=new Date().toLocaleDateString('en-GB').replace(/\//g,'-');
+  a.href=url;a.download='jeweltrack-production-'+today+'.json';a.click();URL.revokeObjectURL(url);
+  P_toast('Backup downloaded');
+}
+function P_restoreData(input){
+  const file=input.files[0];if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const obj=JSON.parse(e.target.result);
+      if(!('pool'in obj)||!('casting'in obj)){P_toast('Invalid backup file');return;}
+      if(!confirm('This will REPLACE all current production data with the backup. Continue?'))return;
+      PD={pool:obj.pool||[],casting:obj.casting||[],filling:obj.filling||[],setting:obj.setting||[]};
+      PWORKERS=obj.workers||[];
+      P_save();P_renderAll();P_toast('Data restored');
+    }catch(err){P_toast('Could not read file');}
+    input.value='';
+  };
+  reader.readAsText(file);
+}
+
+// ============ INIT ============
+
+// ============ PRODUCTION MASTER ============
+// ============ PRODUCTION MASTER ============
+let PM_items = [];   // overview from Job Master
+let PM_pool  = [];   // selection pool from Order Pool (job rows only)
+
+// Build PM_pool from D.pool job rows (qty > 0), enriched with job master progress
+function PM_refreshPool(){
+  // Items already in casting/filling/setting are removed from the planning list
+  const inProduction = new Set([...PD.casting,...PD.filling,...PD.setting,...(PD.polish||[])].map(x=>x.itemKey));
+  PM_pool = (D.pool||[])
+    .filter(p=>(parseInt(p.qty)||0)>0)
+    .filter(p=>!inProduction.has(p.itemKey))
+    .map(p=>{
+      const job = (D.jobs||[]).find(j=>j.itemKey===p.itemKey)||{};
+      return {...p, received:job.received||0, balance:job.balance!==undefined?job.balance:(parseInt(p.qty)||0), finishDate:job.finishDate||''};
+    });
+  PM_renderPool();
+}
+
+function PM_renderPool(){
+  const q=(document.getElementById('pm-pool-search')||{value:''}).value.toLowerCase();
+  const qo=(document.getElementById('pm-pool-order')||{value:''}).value.toLowerCase();
+  const mf=(document.getElementById('pm-pool-metal-f')||{value:''}).value;
+  const f=PM_pool.filter(r=>{
+    if(qo&&!((r.orderNo||'').toLowerCase().includes(qo)))return false;
+    if(q&&!((r.article+(r.type||'')).toLowerCase().includes(q)))return false;
+    if(mf&&r.metal!==mf)return false;
+    return true;
+  });
+  const cnt=document.getElementById('pm-pool-count');
+  if(cnt) cnt.textContent=PM_pool.length+' items in Order Pool';
+  // metal filter
+  const metals=[...new Set(PM_pool.map(r=>r.metal).filter(Boolean))].sort();
+  const ms=document.getElementById('pm-pool-metal-f');
+  if(ms){const cur=ms.value;ms.innerHTML='<option value="">All metals</option>'+metals.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');}
+  const pb=document.getElementById('pm-pool-body');
+  if(!pb)return;
+  if(!f.length){pb.innerHTML='<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--tx3)">No items — import data in Order Pool first</td></tr>';return;}
+  pb.innerHTML=f.map(r=>{
+    return`<tr>
+      <td><input type="checkbox" class="pm-pool-cb" value="${r.itemKey}"></td>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.type||''}</span></td>
+      <td>${r.article||''}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
+      <td>${r.size||'—'}</td>
+      <td>${r.qty||''}</td>
+      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:12px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.diasStr||r.stoneDia||'—';})()}</td>
+      <td>${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.countStr||r.totalStones||'—';})()}</td>
+      <td>${r.totalWt||'—'}</td>
+      <td>${r.wtPurity||'—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+function togglePMPoolAll(cb){document.querySelectorAll('.pm-pool-cb:not([disabled])').forEach(x=>x.checked=cb.checked);}
+
+function PM_loadFromJobMaster(){
+  PM_items = (D.jobs||[]).map(j=>{
+    const poolRow = (D.pool||[]).find(p=>p.itemKey===j.itemKey)||{};
+    return {
+      ...j,
+      // Fallback stoneType + stoneDia to pool data if job's value is empty
+      stoneType: j.stoneType || poolRow.stoneType || '',
+      stoneDia: j.stoneDia || poolRow.stoneDia || '',
+      totalWt: poolRow.totalWt||'',
+      wtPurity: poolRow.wtPurity||'',
+      stoneSizing: poolRow.stoneSizing||'',
+      totalStones: poolRow.totalStones||''
+    };
+  });
+  PM_render();
+}
+
+// Determine the production status of an item by which PD list contains it
+function PM_getStatus(itemKey, hasFinishDate){
+  if(hasFinishDate) return {label:'DONE', cls:'bg'};
+  if((PD.polish||[]).some(x=>x.itemKey===itemKey)) return {label:'POLISH', cls:'bp'};
+  if(PD.setting.some(x=>x.itemKey===itemKey)) return {label:'SETTING', cls:'bp'};
+  if(PD.filling.some(x=>x.itemKey===itemKey)) return {label:'FILLING', cls:'bb'};
+  if(PD.casting.some(x=>x.itemKey===itemKey)) return {label:'CASTING', cls:'by'};
+  return {label:'PLANNING', cls:'bgr'};
+}
+
+function PM_render(){
+  const q=(document.getElementById('pm-search')||{value:''}).value.toLowerCase();
+  const mf=(document.getElementById('pm-metal-f')||{value:''}).value;
+  const sf=(document.getElementById('pm-status-f')||{value:''}).value;
+  const f=PM_items.filter(r=>{
+    if(!((r.orderNo+r.article+(r.itemType||'')).toLowerCase().includes(q)))return false;
+    if(mf&&r.metal!==mf)return false;
+    if(sf==='wip'&&r.finishDate)return false;
+    if(sf==='done'&&!r.finishDate)return false;
+    return true;
+  });
+  const pmCount=document.getElementById('pm-count');
+  if(pmCount) pmCount.textContent=PM_items.length;
+  const total=PM_items.length;
+  const done=PM_items.filter(r=>r.finishDate).length;
+  const wip=total-done;
+  const totalBal=PM_items.reduce((s,r)=>s+(+r.balance||0),0);
+  const pmM=document.getElementById('pm-metrics');
+  if(pmM) pmM.innerHTML=`<div class="metric"><div class="ml">Total items</div><div class="mv">${total}</div></div><div class="metric"><div class="ml">In progress</div><div class="mv yel">${wip}</div></div><div class="metric"><div class="ml">Finished</div><div class="mv grn">${done}</div></div><div class="metric"><div class="ml">Balance qty</div><div class="mv">${totalBal}</div></div>`;
+  const metals=[...new Set(PM_items.map(r=>r.metal).filter(Boolean))].sort();
+  const msel=document.getElementById('pm-metal-f');
+  if(msel){const cur=msel.value;msel.innerHTML='<option value="">All metals</option>'+metals.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');}
+  const pb=document.getElementById('pm-body');
+  if(!pb)return;
+  if(!f.length){pb.innerHTML='<tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--tx3)">No items — import data in Order Pool first</td></tr>';return;}
+  pb.innerHTML=f.map(r=>{
+    // Stone status: auto-derived from Stone Orders (PENDING / PARTIAL / COMPLETE)
+    const sc=getJobStoneStatus(r);
+    const fd=r.finishDate?`<span class="badge bg">${r.finishDate}</span>`:'<span class="badge bgr">—</span>';
+    const status=PM_getStatus(r.itemKey, !!r.finishDate);
+    return`<tr>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.itemType}</span></td>
+      <td>${r.article}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal}</td>
+      <td>${r.size||'—'}</td>
+      <td>${r.qty}</td>
+      <td>${r.received||0}</td>
+      <td>${r.balance}</td>
+      <td>${sc}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.typesStr||r.stoneType||'—';})()}</td>
+      <td style="font-size:11.5px;line-height:1.5">${(()=>{const s=getStonesForItem(r.orderNo,r.article,r.itemKey);return s.diasStr||r.stoneDia||'—';})()}</td>
+      <td><span class="badge ${status.cls}">${status.label}</span></td>
+      <td>${fd}</td>
+    </tr>`;
+  }).join('');
+}
+
+function PM_moveToCasting(){
+  const keys=[...document.querySelectorAll('.pm-pool-cb:checked')].map(c=>c.value);
+  if(!keys.length){P_toast('Select at least one item');return;}
+  const today=new Date().toISOString().slice(0,10);
+  // Show date picker modal
+  openModal(`<h3><i class="ti ti-flame" style="color:var(--accent)"></i> Send to Production</h3>
+    <p style="font-size:13px;color:var(--tx2);margin-bottom:1.2rem">${keys.length} item(s) selected. Choose the casting date.</p>
+    <div class="fg"><label class="fl">Casting date</label><input type="date" lang="en" id="pm-cast-date" value="${today}" style="width:100%"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1.5rem">
+      <button class="btn" onclick="closeModal()">Cancel</button>
+      <button class="btn btnp" onclick="PM_confirmCast(${JSON.stringify(keys).replace(/"/g,'&quot;')})"><i class="ti ti-flame"></i> Confirm &amp; Send</button>
+    </div>`);
+}
+
+function PM_confirmCast(keys){
+  const dateVal=document.getElementById('pm-cast-date').value;
+  const castDate=dateVal?dateVal.split('-').reverse().join('/'):new Date().toLocaleDateString('en-GB');
+  const known=new Set([...PD.casting,...PD.filling,...PD.setting,...(PD.polish||[])].map(x=>x.itemKey));
+  let added=0,skipped=0;
+  keys.forEach(key=>{
+    if(known.has(key)){skipped++;return;}
+    known.add(key);
+    const p=PM_pool.find(x=>x.itemKey===key);
+    if(!p)return;
+    PD.casting.push({
+      itemKey:p.itemKey, orderNo:p.orderNo, type:p.type,
+      article:p.article, metal:p.metal, size:p.size, qty:p.qty,
+      totalWt:p.totalWt, wtPurity:p.wtPurity,
+      stoneType:p.stoneType||'', stoneDia:p.stoneDia||'',
+      totalStones:p.totalStones||'',
+      castDate:castDate, receivedDate:'', receivedWeight:'',
+      importedAt:new Date().toISOString()
+    });
+    added++;
+  });
+  P_save();P_renderAll();PM_loadFromJobMaster();
+  closeModal();
+  if(added) navTo('prod_casting');
+  P_toast(added+' item(s) sent to Production'+(skipped?' · '+skipped+' already there':''));
+}
+
+function P_loadFromOrderPool(){
+  P_importPoolData();
+  P_navTo('master');
+}
+
+// ============ POLISH & PLATING ============
+function P_moveToPolish(){
+  const idx=[...document.querySelectorAll('.sm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to move to Polish & Plating');return;}
+  const notReturned=idx.filter(i=>!PD.setting[i].setReturnDate);
+  if(notReturned.length){P_toast(notReturned.length+' selected item(s) have not been received back from setter yet');return;}
+  idx.sort((a,b)=>b-a).forEach(i=>{
+    const item=PD.setting[i];
+    // carry forward weights — polish starts with setting's return weight as sent weight
+    item.polishSentWt=(item.setReturnWt===''||item.setReturnWt==null)?P_settingMetalWt(item):P_num(item.setReturnWt);
+    item.polishWorker='';item.polishSentDate='';item.polishReturnDate='';item.polishReturnWt='';item.polishLossPct='';
+    PD.polish.push(item);PD.setting.splice(i,1);
+  });
+  P_save();P_renderAll();P_toast(idx.length+' item(s) moved to Polish & Plating');
+}
+
+function P_polishSentWt(r){return P_num(r.polishSentWt||r.setReturnWt||P_settingMetalWt(r));}
+function P_polishDiff(r){
+  if(r.polishReturnWt===''||r.polishReturnWt==null)return null;
+  const sent=P_polishSentWt(r);
+  const allowed=sent*(1-(P_num(r.polishLossPct)/100));
+  return P_num(r.polishReturnWt)-allowed;
+}
+
+function P_renderPolish(){
+  const q=(P_g('pm-search')||{value:''}).value.toLowerCase();
+  const qo=(P_g('pm-search-order')||{value:''}).value.toLowerCase();
+  const qw=(P_g('pm-search-worker')||{value:''}).value.toLowerCase();
+  const st=(P_g('pm-status-f')||{value:''}).value;
+  const f=(PD.polish||[]).filter(r=>{
+    if(qo&&!((r.orderNo||'').toLowerCase().includes(qo)))return false;
+    if(q&&!((r.article+r.type).toLowerCase().includes(q)))return false;
+    if(qw&&!((r.polishWorker||'').toLowerCase().includes(qw)))return false;
+    if(st==='unassigned'&&r.polishWorker)return false;
+    if(st==='out'&&(!r.polishWorker||r.polishReturnDate))return false;
+    if(st==='returned'&&!r.polishReturnDate)return false;
+    return true;
+  });
+  const pc=P_g('pm-count');if(pc)pc.textContent=(PD.polish||[]).length;
+  const body=P_g('pm-body');if(!body)return;
+  if(!f.length){body.innerHTML='<tr><td colspan="13" style="text-align:center;padding:2rem;color:var(--tx3)">No items — move items here from Setting Master</td></tr>';return;}
+  body.innerHTML=f.map(r=>{
+    const i=(PD.polish||[]).indexOf(r);
+    const sent=P_polishSentWt(r);
+    const diff=P_polishDiff(r);
+    let diffCell='<span style="color:var(--tx3)">—</span>';
+    if(diff!=null){const v=diff.toFixed(2);if(diff<-0.0001)diffCell=`<span class="badge br">${v}</span>`;else if(diff>0.0001)diffCell=`<span class="badge bg">+${v}</span>`;else diffCell='<span class="badge bgr">0.00</span>';}
+    return`<tr>
+      <td><input type="checkbox" class="pm-cb" value="${i}"></td>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.type||''}</span></td>
+      <td>${r.article||''}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal||''}</td>
+      <td>${sent?sent.toFixed(2):''}</td>
+      <td>${r.qty||''}</td>
+      <td>${r.polishWorker?`<span class="badge bb">${r.polishWorker}</span>`:'<span style="color:var(--tx3)">—</span>'}</td>
+      <td>${r.polishSentDate||'<span style="color:var(--tx3)">—</span>'}</td>
+      <td>${r.polishReturnDate||'<span style="color:var(--tx3)">—</span>'}</td>
+      <td>${(r.polishReturnWt===''||r.polishReturnWt==null)?'<span style="color:var(--tx3)">—</span>':P_num(r.polishReturnWt).toFixed(2)}</td>
+      <td>${(r.polishLossPct===''||r.polishLossPct==null)?'<span style="color:var(--tx3)">—</span>':r.polishLossPct+'%'}</td>
+      <td>${diffCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function P_togglePmAll(cb){document.querySelectorAll('.pm-cb').forEach(x=>x.checked=cb.checked);}
+
+function P_openPolishAssign(){
+  const idx=[...document.querySelectorAll('.pm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items first');return;}
+  if(!PWORKERS.length){P_toast('No technicians yet — click "Manage technicians" to add one');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const opts=PWORKERS.map(w=>`<option value="${w}">${w}</option>`).join('');
+  P_openModal(`<h3>Assign to technician</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected. Choose the technician and the date the work is handed out.</p>
+    <div class="fg"><label class="fl">Technician</label><select id="polish-worker">${opts}<option value="__add__">+ Add technician…</option></select></div>
+    <div class="fg"><label class="fl">Sent date</label><input type="date" lang="en" id="polish-date" value="${today}"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:1rem"><button class="btn" onclick="P_closeModal()">Cancel</button><button class="btn btnp" onclick="P_confirmPolishAssign([${idx.join(',')}])">Save</button></div>`);
+  P_g('polish-worker').addEventListener('change',function(){if(this.value==='__add__'){const n=prompt('New technician name:');if(n){PWORKERS.push(n);P_save();this.innerHTML=PWORKERS.map(w=>`<option value="${w}"${w===n?' selected':''}>${w}</option>`).join('')+'<option value="__add__">+ Add technician…</option>';}else{this.value=PWORKERS[0]||'';}}});
+}
+
+function P_confirmPolishAssign(idx){
+  const w=P_gv('polish-worker');const d=P_fromISO(P_gv('polish-date'));
+  if(!w||w==='__add__'){P_toast('Choose a technician');return;}
+  if(!d){P_toast('Choose a sent date');return;}
+  idx.forEach(i=>{PD.polish[i].polishWorker=w;PD.polish[i].polishSentDate=d;});
+  P_save();P_closeModal();P_renderPolish();
+  P_toast(idx.length+' item(s) assigned to '+w);
+}
+
+function P_openPolishReceive(){
+  const idx=[...document.querySelectorAll('.pm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to receive first');return;}
+  const notOut=idx.filter(i=>!PD.polish[i].polishWorker);
+  if(notOut.length){P_toast(notOut.length+' selected item(s) are not assigned to a technician yet');return;}
+  const today=new Date().toISOString().slice(0,10);
+  const presetLoss=PD.polish[idx[0]].polishLossPct||'';
+  const sentTotal=idx.reduce((s,i)=>s+P_polishSentWt(PD.polish[i]),0);
+  P_openModal(`<h3>Receive from technician</h3>
+    <p style="font-size:12.5px;color:var(--tx2);margin-bottom:1rem">${idx.length} item(s) selected · total sent weight <strong>${sentTotal.toFixed(2)} g</strong>. Enter the date the work returned, the weight returned, and the allowed loss%.</p>
+    <div class="fg"><label class="fl">Return date</label><input type="date" lang="en" id="pol-recv-date" value="${today}"></div>
+    <div class="fr">
+      <div class="fg"><label class="fl">Return weight (g)${idx.length>1?' — total':''}</label><input type="number" step="0.001" id="pol-recv-wt" placeholder="g"></div>
+      <div class="fg"><label class="fl">Allowed loss %</label><input type="number" step="0.01" id="pol-recv-loss" value="${presetLoss}" placeholder="e.g. 2"></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:.5rem"><button class="btn" onclick="P_closeModal()">Cancel</button><button class="btn btnp" onclick="P_confirmPolishReceive([${idx.join(',')}],${sentTotal})">Save</button></div>`);
+}
+
+function P_confirmPolishReceive(idx,sentTotal){
+  const d=P_fromISO(P_gv('pol-recv-date'));
+  if(!d){P_toast('Choose a return date');return;}
+  if(P_gv('pol-recv-wt')===''){P_toast('Enter the return weight');return;}
+  const totalReturn=P_num(P_gv('pol-recv-wt'));
+  const lp=P_gv('pol-recv-loss');
+  idx.forEach(i=>{
+    const r=PD.polish[i];
+    const share=sentTotal>0?P_polishSentWt(r)/sentTotal:1/idx.length;
+    r.polishReturnDate=d;r.polishReturnWt=+(totalReturn*share).toFixed(3);r.polishLossPct=lp;
+  });
+  P_save();P_closeModal();P_renderPolish();P_toast(idx.length+' item(s) received');
+}
+
+function P_finishAndUpdate(){
+  const idx=[...document.querySelectorAll('.pm-cb:checked')].map(c=>+c.value);
+  if(!idx.length){P_toast('Select items to finish');return;}
+  const notReturned=idx.filter(i=>!PD.polish[i].polishReturnDate);
+  if(notReturned.length){P_toast(notReturned.length+' selected item(s) not yet received from technician');return;}
+  const today=new Date().toLocaleDateString('en-GB');
+  if(!confirm('Mark '+idx.length+' item(s) as FINISHED?\n\nFinish date ('+today+') will be saved to Job Master.\nItems will be removed from Polish & Plating.')) return;
+  idx.sort((a,b)=>b-a).forEach(i=>{
+    const item=PD.polish[i];
+    // Update Job Master finish date
+    const job=D.jobs.find(j=>j.itemKey===item.itemKey);
+    if(job){
+      job.finishDate=today;
+      job.received=job.qty; // mark all qty as received/finished
+      job.balance=0;
+    }
+    PD.polish.splice(i,1);
+  });
+  save();P_save();renderAll();P_renderAll();P_toast(idx.length+' item(s) finished — see Production Overview');
+}
+
+
+// ============ GOLD LOSS REPORT ============
+// Scan ALL Production arrays (Filling/Setting/Polish) — an item retains its
+// filling/setting fields after being moved to the next stage, so we collect
+// records from wherever the item currently lives.
+function GL_buildRecords(){
+  const recs=[];
+  const allItems=[...(PD.filling||[]),...(PD.setting||[]),...(PD.polish||[])];
+  allItems.forEach(r=>{
+    // ── Filling record: item has filling worker + return weight ──
+    if(r.worker && r.returnWt!=='' && r.returnWt!=null){
+      const sent=P_fillingSentWt(r);
+      const diff=P_num(r.returnWt)-sent*(1-(P_num(r.lossPct)/100));
+      const stF=getStonesForItem(r.orderNo,r.article,r.itemKey);
+      recs.push({
+        process:'Filling',
+        processCls:'bb',
+        worker:r.worker||'—',
+        orderNo:r.orderNo||'',type:r.type||'',article:r.article||'',
+        metal:r.metal||'',qty:P_num(r.qty)||0,
+        stoneType:stF.typesStr||r.stoneType||'—',
+        stoneQty:stF.totalCount||(P_num(r.totalStones)||0),
+        sentWt:sent,returnWt:P_num(r.returnWt),
+        metalDiff:diff
+      });
+    }
+    // ── Setting record: item has setter + setting return weight ──
+    if(r.setWorker && r.setReturnWt!=='' && r.setReturnWt!=null){
+      const sent=P_settingMetalWt(r);
+      const stoneG=P_num(r.setStoneCt)/5;
+      const metalReturned=P_num(r.setReturnWt)-stoneG;
+      const diff=metalReturned-sent*(1-(P_num(r.setLossPct)/100));
+      const stS=getStonesForItem(r.orderNo,r.article,r.itemKey);
+      recs.push({
+        process:'Setting',
+        processCls:'bp',
+        worker:r.setWorker||'—',
+        orderNo:r.orderNo||'',type:r.type||'',article:r.article||'',
+        metal:r.metal||'',qty:P_num(r.qty)||0,
+        stoneType:stS.typesStr||r.stoneType||'—',
+        stoneQty:stS.totalCount||(P_num(r.totalStones)||0),
+        sentWt:sent,returnWt:P_num(r.setReturnWt),
+        metalDiff:diff
+      });
+    }
+  });
+  return recs;
+}
+
+function GL_render(){
+  const recs=GL_buildRecords();
+  const pf=(P_g('gl-process-f')||{value:''}).value;
+  const qo=((P_g('gl-search-order')||{value:''}).value||'').toLowerCase();
+  const qw=((P_g('gl-search-worker')||{value:''}).value||'').toLowerCase();
+  const mf=(P_g('gl-metal-f')||{value:''}).value;
+  const f=recs.filter(r=>{
+    if(pf&&r.process.toLowerCase()!==pf)return false;
+    if(qo&&!(r.orderNo||'').toLowerCase().includes(qo))return false;
+    if(qw&&!(r.worker||'').toLowerCase().includes(qw))return false;
+    if(mf&&r.metal!==mf)return false;
+    return true;
+  });
+  // Metal filter options
+  const metals=[...new Set(recs.map(r=>r.metal).filter(Boolean))].sort();
+  const ms=P_g('gl-metal-f');
+  if(ms){const cur=ms.value;ms.innerHTML='<option value="">All metals</option>'+metals.map(m=>`<option value="${m}"${m===cur?' selected':''}>${m}</option>`).join('');}
+  // Totals
+  const totalQty=f.reduce((s,r)=>s+P_num(r.qty),0);
+  const totalStones=f.reduce((s,r)=>s+(P_num(r.stoneQty)||0),0);
+  const totalDiff=f.reduce((s,r)=>s+r.metalDiff,0);
+  const metrics=P_g('gl-metrics');
+  if(metrics){
+    metrics.innerHTML=`
+      <div class="metric"><div class="ml">Records</div><div class="mv">${f.length}</div></div>
+      <div class="metric"><div class="ml">Total qty</div><div class="mv">${totalQty}</div></div>
+      <div class="metric"><div class="ml">Total stones</div><div class="mv">${totalStones||'—'}</div></div>
+      <div class="metric"><div class="ml">Total metal diff (g)</div><div class="mv ${totalDiff<-0.0001?'red':totalDiff>0.0001?'grn':''}">${totalDiff.toFixed(2)}</div></div>`;
+  }
+  const cnt=P_g('gl-count');if(cnt)cnt.textContent=f.length;
+  const body=P_g('gl-body');if(!body)return;
+  if(!f.length){body.innerHTML='<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--tx3)">No records — items must be received from technician first</td></tr>';return;}
+  body.innerHTML=f.map(r=>{
+    const v=r.metalDiff.toFixed(2);
+    let diffCell;
+    if(r.metalDiff<-0.0001)diffCell=`<span class="badge br">${v}</span>`;
+    else if(r.metalDiff>0.0001)diffCell=`<span class="badge bg">+${v}</span>`;
+    else diffCell='<span class="badge bgr">0.00</span>';
+    return`<tr>
+      <td><span class="badge ${r.processCls}">${r.process}</span></td>
+      <td><span class="badge bb">${r.worker}</span></td>
+      <td><strong>${r.orderNo}</strong></td>
+      <td><span class="tag">${r.type}</span></td>
+      <td>${r.article}</td>
+      <td style="font-size:12px;color:var(--tx2)">${r.metal}</td>
+      <td>${r.qty}</td>
+      <td>${r.stoneType}</td>
+      <td>${r.stoneQty}</td>
+      <td>${r.sentWt?r.sentWt.toFixed(2):'—'}</td>
+      <td>${r.returnWt?r.returnWt.toFixed(2):'—'}</td>
+      <td>${diffCell}</td>
+    </tr>`;
+  }).join('');
+}
+
+function GL_exportPDF(){
+  if(!window.jspdf||!window.jspdf.jsPDF){P_toast('PDF library still loading');return;}
+  const recs=GL_buildRecords();
+  const pf=(P_g('gl-process-f')||{value:''}).value;
+  const qo=((P_g('gl-search-order')||{value:''}).value||'').toLowerCase();
+  const qw=((P_g('gl-search-worker')||{value:''}).value||'').toLowerCase();
+  const mf=(P_g('gl-metal-f')||{value:''}).value;
+  const f=recs.filter(r=>{
+    if(pf&&r.process.toLowerCase()!==pf)return false;
+    if(qo&&!(r.orderNo||'').toLowerCase().includes(qo))return false;
+    if(qw&&!(r.worker||'').toLowerCase().includes(qw))return false;
+    if(mf&&r.metal!==mf)return false;
+    return true;
+  });
+  if(!f.length){P_toast('Nothing to export');return;}
+  const {jsPDF}=window.jspdf;
+  const doc=new jsPDF({orientation:'landscape',unit:'mm',format:'a4'});
+  const today=new Date().toLocaleDateString('en-GB');
+  let y=14;
+  doc.setFontSize(16);doc.setTextColor(27,77,140);doc.text('Gold Loss Report',14,y);
+  doc.setFontSize(9);doc.setTextColor(120);doc.text('Generated: '+today,14,y+5);y+=10;
+  // Filter description
+  const filters=[];
+  if(pf)filters.push('Process: '+pf);
+  if(qo)filters.push('Order: '+qo);
+  if(qw)filters.push('Technician: '+qw);
+  if(mf)filters.push('Metal: '+mf);
+  if(filters.length){doc.setFontSize(9);doc.setTextColor(80);doc.text('Filters — '+filters.join(' · '),14,y);y+=6;}
+  // Totals
+  const totalQty=f.reduce((s,r)=>s+P_num(r.qty),0);
+  const totalStones=f.reduce((s,r)=>s+(P_num(r.stoneQty)||0),0);
+  const totalDiff=f.reduce((s,r)=>s+r.metalDiff,0);
+  doc.setFontSize(10);doc.setTextColor(28,37,48);
+  doc.text(`Records: ${f.length}    Total qty: ${totalQty}    Total stones: ${totalStones||'-'}    Total metal diff: ${totalDiff.toFixed(2)} g`,14,y);y+=4;
+  const stripHtml=h=>String(h||'').replace(/<br\s*\/?>/gi,', ').replace(/<[^>]+>/g,'');
+  const rows=f.map(r=>[
+    r.process, r.worker, r.orderNo, r.type, r.article, r.metal,
+    String(r.qty), stripHtml(r.stoneType), String(r.stoneQty),
+    r.sentWt?r.sentWt.toFixed(2):'-',
+    r.returnWt?r.returnWt.toFixed(2):'-',
+    r.metalDiff.toFixed(2)
+  ]);
+  doc.autoTable({
+    startY:y+2,
+    head:[['Process','Technician','Order','Type','Article','Metal','Qty','Stone type','Stone qty','Sent (g)','Return (g)','Diff (g)']],
+    body:rows,
+    theme:'grid',
+    headStyles:{fillColor:[27,77,140],fontSize:8,halign:'left'},
+    bodyStyles:{fontSize:8},
+    margin:{left:14,right:14},
+    tableLineWidth:0.1
+  });
+  doc.save('gold-loss-'+today.replace(/\//g,'-')+'.pdf');
+  P_toast('PDF exported');
+}
+
+function P_renderAll(){PM_refreshPool();PM_loadFromJobMaster();P_renderCastMaster();P_renderFilling();P_renderSetting();P_renderPolish();GL_render();}
+P_loadData();P_renderAll();
+
+
+
+// ── CLEAR ALL DATA (keeps logic, wipes localStorage data only) ──
+function clearAllData(){
+  if(!confirm('⚠️ Clear ALL data from ALL modules?\n\nThis will delete:\n• All orders, Job Master items\n• Stone Orders & Stone Purchase\n• Repair Jobs, Order Pool\n• Production (Casting, Filling, Setting, Planning)\n\nApp logic and code will NOT be deleted.\nBackup first if needed!')) return;
+  const typed = prompt('Type "CLEAR" to confirm:');
+  if(!typed || typed.trim().toUpperCase() !== 'CLEAR'){toast('Cancelled — data unchanged');return;}
+  // Wipe ALL localStorage keys used by this app
+  [SK, PSK, 'jeweltrack_module_visibility_v1'].forEach(k=>localStorage.removeItem(k));
+  // Reset in-memory state
+  D = {orders:[],jobs:[],stoneOrders:[],stonePurchase:[],repairs:[],pool:[]};
+  SUPPLIERS = ['Vanyaa','Ideal','PinThai','PSG','Juluur'];
+  FACTORIES = ['PKL','Dabaan','Ideal'];
+  PD = {casting:[],filling:[],setting:[],polish:[]};
+  PWORKERS = [];
+  PM_items = [];
+  PM_pool = [];
+  // Re-render everything
+  renderAll();
+  P_renderAll();
+  loadModuleSettings();
+  navTo('dashboard');
+  toast('All data cleared — logic preserved');
+}
+
+loadModuleSettings();
+</script>
+</body>
+</html>
