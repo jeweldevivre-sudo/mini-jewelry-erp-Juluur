@@ -325,7 +325,7 @@ input[type=checkbox]{width:16px;height:16px;cursor:pointer;accent-color:var(--ac
     <div style="flex:1;min-width:110px"><label class="fl">Supplier</label><select id="so-supplier-f" onchange="renderStoneOrders()" style="width:100%"><option value="">All suppliers</option></select></div>
   </div>
   <div class="card"><div class="tw"><table>
-    <thead><tr><th>Order no</th><th>Type</th><th>Stone type</th><th>Stone size</th><th>Total qty</th><th>Supplier</th><th>Ordered date</th><th>Received</th><th>Balance</th><th>Stone status</th><th>Complete date</th><th></th></tr></thead>
+    <thead><tr><th>Order no</th><th>Type</th><th>Article</th><th>Stone type</th><th>Stone size</th><th>Total qty</th><th>Supplier</th><th>Ordered date</th><th>Received</th><th>Balance</th><th>Stone status</th><th>Complete date</th><th></th></tr></thead>
     <tbody id="so-body"></tbody>
   </table></div></div>
 </div>
@@ -1547,6 +1547,7 @@ function renderStoneOrders(){
     return`<tr>
       <td><strong>${r.orderNo}</strong></td>
       <td><span class="tag">${r.itemType}</span></td>
+      <td>${r.article||''}</td>
       <td>${r.stoneType}</td>
       <td>${r.stoneDia||r.stoneSize||''}</td>
       <td>${r.totalQty}</td>
@@ -1558,7 +1559,7 @@ function renderStoneOrders(){
       <td><input type="date" lang="en" value="${toISO(r.receivedDate)}" onchange="inlineSet('so_receivedDate',${i},fromISO(this.value))"></td>
       <td><button class="btn btns" onclick="viewSODetail(${i})"><i class="ti ti-eye"></i></button></td>
     </tr>`;
-  }).join('')||'<tr><td colspan="11" style="text-align:center;padding:2rem;color:var(--tx3)">No results</td></tr>');
+  }).join('')||'<tr><td colspan="12" style="text-align:center;padding:2rem;color:var(--tx3)">No results</td></tr>');
 }
 
 // STONE PURCHASE — grouped by supplier, each in a card
